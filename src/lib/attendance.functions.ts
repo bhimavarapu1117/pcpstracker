@@ -31,6 +31,12 @@ export const listSites = createServerFn({ method: "GET" }).handler(async () => {
   return getSites();
 });
 
+export const refreshSites = createServerFn({ method: "GET" }).handler(async () => {
+  const { invalidateReads, getSites } = await import("./sheets.server");
+  invalidateReads();
+  return getSites();
+});
+
 export const getTodayStatus = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ employeeId: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   MapPin,
   
@@ -39,9 +39,9 @@ import { cn } from "@/lib/utils";
 import {
   loginEmployee,
   listSites,
+  refreshSites,
   recordAttendance,
   recordSiteVisit,
-  
   getTodayStatus,
 } from "@/lib/attendance.functions";
 
@@ -286,10 +286,11 @@ function Clockface() {
 
 function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Session; onLogout: () => void; dayOpen: boolean; setDayOpen: (v: boolean) => void; }) {
   const sitesFn = useServerFn(listSites);
+  const refreshSitesFn = useServerFn(refreshSites);
   const statusFn = useServerFn(getTodayStatus);
   const attendanceFn = useServerFn(recordAttendance);
   const visitFn = useServerFn(recordSiteVisit);
-  
+  const queryClient = useQueryClient();
 
   const [fix, setFix] = useState<Fix | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
@@ -297,7 +298,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const [siteId, setSiteId] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [frozenWorkSeconds, setFrozenWorkSeconds] = useState<number | null>(null);
-
+  const [refreshingSites, setRefreshingSites] = useState(false);
 
   const sites = useQuery({
     queryKey: ["sites"],
@@ -312,6 +313,19 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
     queryFn: () => statusFn({ data: { employeeId: session.employeeId } }),
     refetchOnWindowFocus: true,
   });
+
+  const handleRefreshSites = async () => {
+    setRefreshingSites(true);
+    try {
+      const fresh = await refreshSitesFn({});
+      queryClient.setQueryData(["sites"], fresh);
+      toast.success("Sites refreshed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to refresh sites.");
+    } finally {
+      setRefreshingSites(false);
+    }
+  };
 
   const openShiftStart = status.data?.openShiftStart ?? null;
   const openVisit = status.data?.openVisit ?? null;
@@ -528,8 +542,18 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Building2 className="size-4" /> Site visit
+            <button
+              type="button"
+              onClick={handleRefreshSites}
+              disabled={refreshingSites}
+              className="ml-auto inline-flex items-center gap-1 rounded-full p-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+              aria-label="Refresh sites"
+            >
+              <RefreshCw className={cn("size-3.5", refreshingSites && "animate-spin")} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
             {openVisit ? (
-              <span className="ml-auto font-mono text-sm tabular-nums text-primary">
+              <span className="font-mono text-sm tabular-nums text-primary">
                 {formatDuration(visitSeconds)}
               </span>
             ) : null}
