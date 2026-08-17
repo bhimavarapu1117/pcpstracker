@@ -105,6 +105,7 @@ function hhmm(iso: string) {
 function FieldApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  const [dayOpen, setDayOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -119,10 +120,12 @@ function FieldApp() {
   const signIn = (s: Session) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(s));
     setSession(s);
+    setDayOpen(true);
   };
   const signOut = () => {
     localStorage.removeItem(SESSION_KEY);
     setSession(null);
+    setDayOpen(false);
   };
 
   return (
@@ -146,7 +149,7 @@ function FieldApp() {
               <p className="text-sm text-muted-foreground">Here’s your day on the field.</p>
             </div>
             <div className="py-5">
-              <Workspace session={session} onLogout={signOut} />
+              <Workspace session={session} onLogout={signOut} dayOpen={dayOpen} setDayOpen={setDayOpen} />
             </div>
           </>
         ) : null}
@@ -264,7 +267,7 @@ function Clockface() {
   );
 }
 
-function Workspace({ session, onLogout }: { session: Session; onLogout: () => void }) {
+function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Session; onLogout: () => void; dayOpen: boolean; setDayOpen: (v: boolean) => void; }) {
   const sitesFn = useServerFn(listSites);
   const statusFn = useServerFn(getTodayStatus);
   const attendanceFn = useServerFn(recordAttendance);
@@ -276,7 +279,6 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
   const [busy, setBusy] = useState(false);
   const [siteId, setSiteId] = useState<string>("");
   const [notes, setNotes] = useState("");
-  const [dayOpen, setDayOpen] = useState(false);
 
 
   const sites = useQuery({ queryKey: ["sites"], queryFn: () => sitesFn({}) });
