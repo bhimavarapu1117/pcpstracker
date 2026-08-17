@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useElapsed, formatDuration } from "@/hooks/use-elapsed";
 import { getAdminData } from "@/lib/attendance.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -314,5 +315,51 @@ function TableCard({ head, rows }: { head: string[]; rows: React.ReactNode[][] }
         </Table>
       </CardContent>
     </Card>
+  );
+}
+
+type RosterRow = Admin["roster"][number];
+
+function WorkedCell({
+  openSince,
+  completedSeconds,
+}: {
+  openSince: string | null;
+  completedSeconds: number;
+}) {
+  const seconds = useElapsed(openSince, completedSeconds);
+  return (
+    <span className={openSince ? "font-mono tabular-nums text-primary" : "font-mono tabular-nums"}>
+      {formatDuration(seconds)}
+    </span>
+  );
+}
+
+function LiveRow({ row }: { row: RosterRow }) {
+  const seconds = useElapsed(row.openSince, row.completedSeconds);
+  return (
+    <div className="flex items-center justify-between rounded-md border p-3">
+      <div>
+        <p className="text-sm font-medium">{row.name}</p>
+        <p className="text-xs text-muted-foreground">
+          {row.employeeId} · in at {row.checkIn || "-"} · {row.visits} site visit(s)
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        {row.lastSeen ? (
+          <a
+            className="text-xs underline underline-offset-4"
+            href={row.lastSeen.mapLink}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Last location
+          </a>
+        ) : null}
+        <span className="font-mono text-lg tabular-nums text-primary">
+          {formatDuration(seconds)}
+        </span>
+      </div>
+    </div>
   );
 }
