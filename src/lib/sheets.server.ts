@@ -708,13 +708,13 @@ export type AdminData = Awaited<ReturnType<typeof buildAdminData>>;
 
 
 export async function buildAdminData(date: string) {
-  const [employees, sites, attendanceRows, visitRows, locationRows] = await Promise.all([
+  const [employees, sites, attendanceRows, visitRows] = await Promise.all([
     getEmployees(),
     getSites(),
     readRange(ATTENDANCE_RANGE),
     readRange(SITEVISITS_RANGE),
-    readRange("LocationLogs!A2:H2000"),
   ]);
+
 
   const shifts = parseShifts(attendanceRows).filter(
     (s) =>
