@@ -126,8 +126,12 @@ function FieldApp() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-2xl px-4 py-5">
+    <main
+      className={
+        session ? "min-h-screen" : "flex min-h-screen items-center justify-center"
+      }
+    >
+      <div className={session ? "mx-auto max-w-2xl px-4 py-5" : "w-full max-w-2xl px-4 py-5"}>
         {session ? (
           <header className="flex items-center justify-between gap-3 rounded-full border bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
             <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-7 w-auto" />
@@ -149,7 +153,7 @@ function FieldApp() {
           </div>
         ) : null}
 
-        <div className="py-5">
+        <div className={session ? "py-5" : ""}>
           {!ready ? null : session ? (
             <Workspace session={session} onLogout={signOut} />
           ) : (
