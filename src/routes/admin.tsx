@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ExternalLink, LayoutDashboard, RefreshCw } from "lucide-react";
+import { ArrowUpRight, ExternalLink, LayoutDashboard, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -294,7 +294,7 @@ function MapLink({ href }: { href: string }) {
 
 function TableCard({ head, rows }: { head: string[]; rows: React.ReactNode[][] }) {
   return (
-    <Card className="mt-4">
+    <Card className="mt-4 rounded-3xl border-0 shadow-sm">
       <CardContent className="overflow-x-auto p-0">
         <Table>
           <TableHeader>
