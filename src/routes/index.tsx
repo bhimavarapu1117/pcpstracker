@@ -62,7 +62,7 @@ export const Route = createFileRoute("/")({
   component: FieldApp,
 });
 
-const LOCATION_INTERVAL = 60000;
+
 const SESSION_KEY = "field-attendance-session";
 
 type Session = { employeeId: string; name: string };
