@@ -627,6 +627,10 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
                     <Badge variant="destructive" className="shrink-0">
                       Outside
                     </Badge>
+                  ) : e.withinGeofence === true ? (
+                    <Badge className="shrink-0 bg-google-green text-google-green-foreground hover:bg-google-green/90">
+                      Inside
+                    </Badge>
                   ) : null}
                 </li>
               ))}
