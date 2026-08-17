@@ -25,18 +25,31 @@ function authHeaders() {
 
 async function gateway(path: string, init?: RequestInit) {
   let attempt = 0;
-  // Sheets enforces a per-minute read quota; back off instead of hammering it.
+  const maxAttempts = 5;
+  // Sheets enforces a per-minute read quota, and the gateway can drop connections
+  // transiently (502/503/504). Back off and retry instead of failing the request.
   while (true) {
-    const res = await fetch(`${GATEWAY_URL}${path}`, {
-      ...init,
-      headers: authHeaders(),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${GATEWAY_URL}${path}`, {
+        ...init,
+        headers: authHeaders(),
+      });
+    } catch (err) {
+      if (attempt < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
+        attempt += 1;
+        continue;
+      }
+      throw err;
+    }
     if (res.ok) return res.json();
     const body = await res.text();
-    if (res.status === 429 && attempt < 5) {
+    const retryable = res.status === 429 || res.status >= 500;
+    if (retryable && attempt < maxAttempts) {
       const retryAfter = Number(res.headers.get("retry-after"));
       const waitMs =
-        Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1000 * 2 ** attempt;
+        Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 500 * 2 ** attempt;
       attempt += 1;
       await new Promise((r) => setTimeout(r, waitMs));
       continue;
@@ -45,6 +58,7 @@ async function gateway(path: string, init?: RequestInit) {
     throw new Error(`Google Sheets request failed [${res.status}]: ${body}`);
   }
 }
+
 
 /* ---------- read cache (quota protection) ---------- */
 
