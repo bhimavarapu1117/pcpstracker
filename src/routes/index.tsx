@@ -103,6 +103,15 @@ function hhmm(iso: string) {
     : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "-";
+  const date = d.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "numeric" });
+  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  return `${date} · ${time}`;
+}
+
+
 function FieldApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
