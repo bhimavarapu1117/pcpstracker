@@ -300,6 +300,10 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const [notes, setNotes] = useState("");
   const [frozenWorkSeconds, setFrozenWorkSeconds] = useState<number | null>(null);
   const [refreshingSites, setRefreshingSites] = useState(false);
+  const [rangeKey, setRangeKey] = useState<string>("7d");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [page, setPage] = useState(1);
 
   const sites = useQuery({
     queryKey: ["sites"],
@@ -335,6 +339,31 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const workSeconds = useElapsed(openShiftStart, completed);
   const displayedWorkSeconds = frozenWorkSeconds ?? workSeconds;
   const visitSeconds = useElapsed(openVisit?.startedAt ?? null, 0);
+
+  const allEvents = status.data?.events ?? [];
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const filteredEvents = allEvents.filter((e) => {
+    const t = new Date(e.timestamp).getTime();
+    if (Number.isNaN(t)) return false;
+    const today = startOfDay(new Date());
+    const day = 86_400_000;
+    if (rangeKey === "today") return t >= today;
+    if (rangeKey === "yesterday") return t >= today - day && t < today;
+    if (rangeKey === "7d") return t >= today - 6 * day;
+    if (rangeKey === "30d") return t >= today - 29 * day;
+    if (rangeKey === "custom") {
+      const from = customFrom ? new Date(`${customFrom}T00:00:00`).getTime() : -Infinity;
+      const to = customTo ? new Date(`${customTo}T23:59:59.999`).getTime() : Infinity;
+      return t >= from && t <= to;
+    }
+    return true;
+  });
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedEvents = filteredEvents.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const rangeStart = filteredEvents.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const rangeEnd = Math.min(safePage * pageSize, filteredEvents.length);
 
   useEffect(() => {
     if (openVisit) setSiteId(openVisit.siteId);
@@ -612,47 +641,120 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
         </CardContent>
       </Card>
 
-      {/* Today's timeline */}
+      {/* Activity timeline */}
       <Card className="rounded-3xl border-0 shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Recent Activity</CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="text-base">Recent Activity</CardTitle>
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+              <Select
+                value={rangeKey}
+                onValueChange={(v) => {
+                  setRangeKey(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[150px] rounded-full">
+                  <SelectValue placeholder="Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="yesterday">Yesterday</SelectItem>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="custom">Custom dates</SelectItem>
+                </SelectContent>
+              </Select>
+              {rangeKey === "custom" ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => {
+                      setCustomFrom(e.target.value);
+                      setPage(1);
+                    }}
+                    className="h-9 w-[140px] rounded-full"
+                  />
+                  <Input
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => {
+                      setCustomTo(e.target.value);
+                      setPage(1);
+                    }}
+                    className="h-9 w-[140px] rounded-full"
+                  />
+                </div>
+              ) : null}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {status.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : (status.data?.events.length ?? 0) === 0 ? (
-            <p className="text-sm text-muted-foreground">No activity logged yet today.</p>
+          ) : filteredEvents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No activity for this period.</p>
           ) : (
-            <ol className="space-y-3">
-              {status.data!.events.map((e, i) => (
-                <li key={`${e.timestamp}-${i}`} className="flex items-start gap-3 text-sm">
-                  <span
-                    className={cn(
-                      "mt-1 size-2 shrink-0 rounded-full",
-                      e.type === "CHECK_IN" && "bg-google-green",
-                      e.type === "CHECK_OUT" && "bg-destructive",
-                      e.type !== "CHECK_IN" && e.type !== "CHECK_OUT" && "bg-primary",
-                    )}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{e.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDateTime(e.timestamp)}
-                      {e.notes ? ` · ${e.notes}` : ""}
-                    </p>
-                  </div>
-                  {e.withinGeofence === false ? (
-                    <Badge variant="destructive" className="shrink-0">
-                      Outside
-                    </Badge>
-                  ) : e.withinGeofence === true ? (
-                    <Badge className="shrink-0 bg-google-green text-google-green-foreground hover:bg-google-green/90">
-                      Inside
-                    </Badge>
-                  ) : null}
-                </li>
-              ))}
-            </ol>
+            <>
+              <ol className="space-y-3">
+                {pagedEvents.map((e, i) => (
+                  <li key={`${e.timestamp}-${i}`} className="flex items-start gap-3 text-sm">
+                    <span
+                      className={cn(
+                        "mt-1 size-2 shrink-0 rounded-full",
+                        e.type === "CHECK_IN" && "bg-google-green",
+                        e.type === "CHECK_OUT" && "bg-destructive",
+                        e.type !== "CHECK_IN" && e.type !== "CHECK_OUT" && "bg-primary",
+                      )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{e.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDateTime(e.timestamp)}
+                        {e.notes ? ` · ${e.notes}` : ""}
+                      </p>
+                    </div>
+                    {e.withinGeofence === false ? (
+                      <Badge variant="destructive" className="shrink-0">
+                        Outside
+                      </Badge>
+                    ) : e.withinGeofence === true ? (
+                      <Badge className="shrink-0 bg-google-green text-google-green-foreground hover:bg-google-green/90">
+                        Inside
+                      </Badge>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+
+              <div className="mt-4 flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {rangeStart}–{rangeEnd} of {filteredEvents.length}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    disabled={safePage <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    disabled={safePage >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
