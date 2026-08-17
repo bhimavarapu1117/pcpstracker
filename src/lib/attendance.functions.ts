@@ -82,3 +82,34 @@ export const getAdminData = createServerFn({ method: "POST" })
     const { buildAdminData, isoDate } = await import("./sheets.server");
     return { success: true as const, data: await buildAdminData(data.date || isoDate()) };
   });
+
+export const listOpenVisitsAdmin = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ passcode: z.string().min(1) }).parse(d))
+  .handler(async ({ data }) => {
+    const expected = process.env["ADMIN_PASSCODE"] ?? "2468";
+    if (data.passcode.trim() !== expected) {
+      return { success: false as const, message: "Incorrect admin passcode." };
+    }
+    const { listOpenVisits } = await import("./sheets.server");
+    return { success: true as const, visits: await listOpenVisits() };
+  });
+
+export const forceCloseVisitAdmin = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        passcode: z.string().min(1),
+        sheetRow: z.number().int().positive(),
+        notes: z.string().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const expected = process.env["ADMIN_PASSCODE"] ?? "2468";
+    if (data.passcode.trim() !== expected) {
+      return { success: false as const, message: "Incorrect admin passcode." };
+    }
+    const { forceCloseVisit } = await import("./sheets.server");
+    const res = await forceCloseVisit({ sheetRow: data.sheetRow, notes: data.notes });
+    return { success: true as const, ...res };
+  });
