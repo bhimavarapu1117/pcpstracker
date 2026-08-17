@@ -211,9 +211,105 @@ export async function writeLocation(data: GeoPayload) {
   return { success: true };
 }
 
+/* ---------- today status (live timer) ---------- */
+
+export type DayEvent = {
+  timestamp: string;
+  type: "CHECK_IN" | "CHECK_OUT" | "SITE_CHECK_IN" | "SITE_CHECK_OUT";
+  label: string;
+  mapLink: string;
+  distance?: number;
+  withinGeofence?: boolean;
+  notes?: string;
+};
+
+export async function readTodayForEmployee(employeeId: string) {
+  const date = isoDate();
+  const [attendanceRows, visitRows] = await Promise.all([
+    readRange("Attendance!A2:J2000"),
+    readRange("SiteVisits!A2:O2000"),
+  ]);
+
+  const mine = attendanceRows
+    .filter((r) => r[1] === date && String(r[2]) === employeeId)
+    .map((r) => ({
+      timestamp: String(r[0]),
+      action: String(r[4]),
+      mapLink: String(r[8] ?? ""),
+      notes: String(r[9] ?? ""),
+    }))
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+  const myVisits = visitRows
+    .filter((r) => r[1] === date && String(r[2]) === employeeId)
+    .map((r) => ({
+      timestamp: String(r[0]),
+      siteId: String(r[4]),
+      siteName: String(r[5]),
+      action: String(r[7]),
+      distance: Number(r[11]) || 0,
+      withinGeofence: String(r[12]) === "YES",
+      mapLink: String(r[13] ?? ""),
+      notes: String(r[14] ?? ""),
+    }))
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+  let openShiftStart: string | null = null;
+  let completedSeconds = 0;
+  for (const row of mine) {
+    if (row.action === "CHECK_IN") {
+      openShiftStart = row.timestamp;
+    } else if (row.action === "CHECK_OUT" && openShiftStart) {
+      completedSeconds += Math.max(
+        0,
+        (new Date(row.timestamp).getTime() - new Date(openShiftStart).getTime()) / 1000,
+      );
+      openShiftStart = null;
+    }
+  }
+
+  let openVisit: { siteId: string; siteName: string; startedAt: string } | null = null;
+  for (const v of myVisits) {
+    if (v.action === "SITE_CHECK_IN") {
+      openVisit = { siteId: v.siteId, siteName: v.siteName, startedAt: v.timestamp };
+    } else if (v.action === "SITE_CHECK_OUT") {
+      openVisit = null;
+    }
+  }
+
+  const events: DayEvent[] = [
+    ...mine.map((r) => ({
+      timestamp: r.timestamp,
+      type: r.action as DayEvent["type"],
+      label: r.action === "CHECK_IN" ? "Clocked in" : "Clocked out",
+      mapLink: r.mapLink,
+      notes: r.notes,
+    })),
+    ...myVisits.map((v) => ({
+      timestamp: v.timestamp,
+      type: v.action as DayEvent["type"],
+      label: `${v.siteName} — ${v.action === "SITE_CHECK_IN" ? "site in" : "site out"}`,
+      mapLink: v.mapLink,
+      distance: v.distance,
+      withinGeofence: v.withinGeofence,
+      notes: v.notes,
+    })),
+  ].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+  return {
+    date,
+    serverNow: new Date().toISOString(),
+    openShiftStart,
+    completedSeconds: Math.round(completedSeconds),
+    openVisit,
+    events,
+  };
+}
+
 /* ---------- admin dashboard ---------- */
 
 export type AdminData = Awaited<ReturnType<typeof buildAdminData>>;
+
 
 export async function buildAdminData(date: string) {
   const [employees, sites, attendanceRows, visitRows, locationRows] = await Promise.all([
