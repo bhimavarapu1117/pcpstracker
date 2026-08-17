@@ -447,7 +447,7 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
 
           {selectedSite ? (
             <p className="text-xs text-muted-foreground">
-              {selectedSite.address} · geofence {selectedSite.radius} m
+              {selectedSite.address}
               {openVisit ? ` · on site since ${hhmm(openVisit.startedAt)}` : ""}
             </p>
           ) : null}
@@ -485,26 +485,17 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
               {status.data!.events.map((e, i) => (
                 <li key={`${e.timestamp}-${i}`} className="flex items-start gap-3 text-sm">
                   <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium">{e.label}</p>
                     <p className="text-xs text-muted-foreground">
                       {hhmm(e.timestamp)}
-                      {typeof e.distance === "number" ? ` · ${e.distance} m from site` : ""}
                       {e.notes ? ` · ${e.notes}` : ""}
                     </p>
                   </div>
                   {e.withinGeofence === false ? (
-                    <Badge variant="destructive">Outside</Badge>
-                  ) : null}
-                  {e.mapLink ? (
-                    <a
-                      className="text-xs underline underline-offset-4"
-                      href={e.mapLink}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Map
-                    </a>
+                    <Badge variant="destructive" className="shrink-0">
+                      Outside
+                    </Badge>
                   ) : null}
                 </li>
               ))}
