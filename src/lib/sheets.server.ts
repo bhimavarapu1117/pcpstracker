@@ -145,6 +145,48 @@ export function timeLabel(value: string) {
   });
 }
 
+/* ---------- IST date/time formatting (Attendance sheet) ---------- */
+
+const IST = "Asia/Kolkata";
+
+/** DD/MM/YYYY in IST */
+export function istDate(d = new Date()) {
+  const p = new Intl.DateTimeFormat("en-GB", {
+    timeZone: IST,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(d);
+  return p;
+}
+
+/** hh:mm:ss AM/PM in IST */
+export function istTime(d = new Date()) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: IST,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  }).format(d);
+}
+
+/** Turns "17/08/2026" + "09:47:41 PM" (IST) back into an ISO timestamp. */
+export function istToIso(date: string, time: string): string | null {
+  const d = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(date).trim());
+  const t = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i.exec(String(time).trim());
+  if (!d || !t) return null;
+  let hour = Number(t[1]);
+  const meridiem = t[4]?.toUpperCase();
+  if (meridiem === "PM" && hour !== 12) hour += 12;
+  if (meridiem === "AM" && hour === 12) hour = 0;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const iso = `${d[3]}-${d[2]}-${d[1]}T${pad(hour)}:${t[2]}:${t[3] ?? "00"}+05:30`;
+  const parsed = new Date(iso);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
+
 /* ---------- domain reads ---------- */
 
 export type Employee = {
