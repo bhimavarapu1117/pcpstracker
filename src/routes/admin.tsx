@@ -619,7 +619,25 @@ function MapLink({ href }: { href: string }) {
   );
 }
 
-function TableCard({ head, rows }: { head: string[]; rows: React.ReactNode[][] }) {
+function TableCard({
+  head,
+  rows,
+  page,
+  onPageChange,
+}: {
+  head: string[];
+  rows: React.ReactNode[][];
+  page?: number;
+  onPageChange?: (page: number) => void;
+}) {
+  const pageSize = 10;
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const safePage = page ? Math.min(page, totalPages) : 1;
+  const pagedRows = page ? rows.slice((safePage - 1) * pageSize, safePage * pageSize) : rows;
+  const rangeStart = totalRows === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const rangeEnd = Math.min(safePage * pageSize, totalRows);
+
   return (
     <Card className="mt-4 rounded-3xl border-0 shadow-sm">
       <CardContent className="overflow-x-auto p-0">
@@ -632,14 +650,14 @@ function TableCard({ head, rows }: { head: string[]; rows: React.ReactNode[][] }
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.length === 0 ? (
+            {pagedRows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={head.length} className="text-center text-muted-foreground">
                   No records for this day.
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((row, i) => (
+              pagedRows.map((row, i) => (
                 <TableRow key={i}>
                   {row.map((cell, j) => (
                     <TableCell key={j}>{cell}</TableCell>
@@ -650,6 +668,33 @@ function TableCard({ head, rows }: { head: string[]; rows: React.ReactNode[][] }
           </TableBody>
         </Table>
       </CardContent>
+      {page && onPageChange && totalRows > pageSize ? (
+        <div className="flex items-center justify-between border-t px-5 py-3">
+          <p className="text-xs text-muted-foreground">
+            {rangeStart}–{rangeEnd} of {totalRows}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={safePage <= 1}
+              onClick={() => onPageChange(Math.max(1, safePage - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={safePage >= totalPages}
+              onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </Card>
   );
 }
