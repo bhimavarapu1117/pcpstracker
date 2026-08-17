@@ -77,22 +77,13 @@ function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-5">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Good day, <span className="text-primary">Admin</span>
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Here’s what’s happening with your field crew today.
-          </p>
-        </div>
-
-
+    <main className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-6xl px-4 py-5">
         {!data ? (
-          <Card className="mx-auto max-w-md">
-            <CardHeader>
-              <CardTitle>Admin access</CardTitle>
+          <Card className="mx-auto max-w-md rounded-3xl border-0 bg-card/85 shadow-lg backdrop-blur">
+            <CardHeader className="items-center pb-2">
+              <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-16 w-auto" />
+              <CardTitle className="sr-only">Admin access</CardTitle>
             </CardHeader>
             <CardContent>
               <form
@@ -107,24 +98,28 @@ function AdminPage() {
                   <Input
                     id="passcode"
                     type="password"
+                    className="rounded-full"
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={busy}>
+                <Button
+                  type="submit"
+                  className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  disabled={busy}
+                >
                   {busy ? "Loading…" : "Open dashboard"}
                 </Button>
                 <div className="flex justify-center">
                   <Link
                     to="/"
-                    className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                    className="text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-primary hover:underline"
                   >
                     Employee app
                   </Link>
                 </div>
                 <p className="text-center text-xs text-muted-foreground">Default passcode: 2468</p>
-
               </form>
             </CardContent>
           </Card>
