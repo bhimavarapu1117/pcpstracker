@@ -4,9 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import {
   MapPin,
-  Play,
-  Square,
-  Satellite,
   
   Building2,
   Clock,
@@ -432,7 +429,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
       <Dialog open={dayOpen} onOpenChange={setDayOpen}>
         <DialogContent className="rounded-3xl sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-center text-base">{session.employeeId}</DialogTitle>
+            <DialogTitle className="text-center text-base">{session.name} · {session.employeeId}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 pb-2">
             <Clockface />
@@ -465,7 +462,6 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
                 setDayOpen(false);
               }}
             >
-              {running ? <Square className="size-4" /> : <Play className="size-4" />}
               {busy ? "Saving…" : running ? "Logout" : "Login"}
             </Button>
 
