@@ -1,16 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import {
   MapPin,
-  LogIn,
-  LogOut,
+  Play,
+  Square,
   Satellite,
-  ShieldCheck,
-  ShieldAlert,
   Radio,
   Building2,
+  Clock,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,12 +28,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useElapsed, formatDuration, formatShort } from "@/hooks/use-elapsed";
 import {
   loginEmployee,
   listSites,
   recordAttendance,
   recordSiteVisit,
   recordLocation,
+  getTodayStatus,
 } from "@/lib/attendance.functions";
 
 export const Route = createFileRoute("/")({
@@ -43,13 +45,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Employee GPS attendance for pest control crews: start-day check-in, site visits with geofence validation and live location tracking.",
+          "Employee GPS attendance for pest control crews: live running work timer, site visits with geofence validation and location tracking.",
       },
       { property: "og:title", content: "Field Attendance | Pest Control GPS Time Tracking" },
       {
         property: "og:description",
         content:
-          "Clock in with GPS, check in and out of customer sites with geofence validation, and log location history to Google Sheets.",
+          "Clock in with a live running timer, check in and out of customer sites with geofence validation, and log location history to Google Sheets.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -59,7 +61,9 @@ export const Route = createFileRoute("/")({
 });
 
 const LOCATION_INTERVAL = 60000;
+const SESSION_KEY = "field-attendance-session";
 
+type Session = { employeeId: string; name: string };
 type Fix = { latitude: number; longitude: number; accuracy: number; at: number };
 
 function getFix(): Promise<Fix> {
@@ -82,8 +86,35 @@ function getFix(): Promise<Fix> {
   });
 }
 
+function hhmm(iso: string) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? "-"
+    : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 function FieldApp() {
-  const [session, setSession] = useState<{ employeeId: string; name: string } | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (raw) setSession(JSON.parse(raw) as Session);
+    } catch {
+      /* ignore */
+    }
+    setReady(true);
+  }, []);
+
+  const signIn = (s: Session) => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    setSession(s);
+  };
+  const signOut = () => {
+    localStorage.removeItem(SESSION_KEY);
+    setSession(null);
+  };
 
   return (
     <main className="min-h-screen bg-background">
@@ -108,17 +139,17 @@ function FieldApp() {
       </header>
 
       <div className="mx-auto max-w-2xl px-4 py-6">
-        {session ? (
-          <Workspace session={session} onLogout={() => setSession(null)} />
+        {!ready ? null : session ? (
+          <Workspace session={session} onLogout={signOut} />
         ) : (
-          <LoginCard onLogin={setSession} />
+          <LoginCard onLogin={signIn} />
         )}
       </div>
     </main>
   );
 }
 
-function LoginCard({ onLogin }: { onLogin: (s: { employeeId: string; name: string }) => void }) {
+function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
   const login = useServerFn(loginEmployee);
   const [employeeId, setEmployeeId] = useState("");
   const [pin, setPin] = useState("");
@@ -176,23 +207,32 @@ function LoginCard({ onLogin }: { onLogin: (s: { employeeId: string; name: strin
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? "Checking…" : "Sign in"}
           </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            Demo login: EMP001 / 1234
-          </p>
+          <p className="text-center text-xs text-muted-foreground">Demo login: EMP001 / 1234</p>
         </form>
       </CardContent>
     </Card>
   );
 }
 
-function Workspace({
-  session,
-  onLogout,
-}: {
-  session: { employeeId: string; name: string };
-  onLogout: () => void;
-}) {
+function Clockface() {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  if (!now) return <p className="text-sm text-muted-foreground">&nbsp;</p>;
+  return (
+    <p className="text-sm text-muted-foreground">
+      {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })} ·{" "}
+      {now.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })}
+    </p>
+  );
+}
+
+function Workspace({ session, onLogout }: { session: Session; onLogout: () => void }) {
   const sitesFn = useServerFn(listSites);
+  const statusFn = useServerFn(getTodayStatus);
   const attendanceFn = useServerFn(recordAttendance);
   const visitFn = useServerFn(recordSiteVisit);
   const locationFn = useServerFn(recordLocation);
@@ -204,10 +244,24 @@ function Workspace({
   const [notes, setNotes] = useState("");
   const [tracking, setTracking] = useState(false);
   const [pings, setPings] = useState(0);
-  const trackingRef = useRef(tracking);
-  trackingRef.current = tracking;
 
   const sites = useQuery({ queryKey: ["sites"], queryFn: () => sitesFn({}) });
+  const status = useQuery({
+    queryKey: ["today", session.employeeId],
+    queryFn: () => statusFn({ data: { employeeId: session.employeeId } }),
+    refetchOnWindowFocus: true,
+  });
+
+  const openShiftStart = status.data?.openShiftStart ?? null;
+  const openVisit = status.data?.openVisit ?? null;
+  const completed = status.data?.completedSeconds ?? 0;
+
+  const workSeconds = useElapsed(openShiftStart, completed);
+  const visitSeconds = useElapsed(openVisit?.startedAt ?? null, 0);
+
+  useEffect(() => {
+    if (openVisit) setSiteId(openVisit.siteId);
+  }, [openVisit]);
 
   const refreshFix = useCallback(async () => {
     try {
@@ -216,8 +270,7 @@ function Workspace({
       setGpsError(null);
       return next;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "GPS unavailable.";
-      setGpsError(message);
+      setGpsError(err instanceof Error ? err.message : "GPS unavailable.");
       throw err;
     }
   }, []);
@@ -262,6 +315,7 @@ function Workspace({
     try {
       const current = await refreshFix();
       await run(current);
+      await status.refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -269,8 +323,9 @@ function Workspace({
     }
   }
 
-  const day = (action: "CHECK_IN" | "CHECK_OUT") =>
+  const toggleDay = () =>
     withFix(async (f) => {
+      const action = openShiftStart ? "CHECK_OUT" : "CHECK_IN";
       await attendanceFn({
         data: {
           employeeId: session.employeeId,
@@ -282,11 +337,12 @@ function Workspace({
         },
       });
       setNotes("");
-      toast.success(action === "CHECK_IN" ? "Day started" : "Day ended");
+      toast.success(action === "CHECK_IN" ? "Clocked in — timer running" : "Clocked out");
     });
 
-  const visit = (action: "SITE_CHECK_IN" | "SITE_CHECK_OUT") => {
-    if (!siteId) {
+  const toggleVisit = () => {
+    const target = openVisit?.siteId ?? siteId;
+    if (!target) {
       toast.error("Select a site first.");
       return;
     }
@@ -294,8 +350,8 @@ function Workspace({
       const res = await visitFn({
         data: {
           employeeId: session.employeeId,
-          siteId,
-          action,
+          siteId: target,
+          action: openVisit ? "SITE_CHECK_OUT" : "SITE_CHECK_IN",
           latitude: f.latitude,
           longitude: f.longitude,
           accuracy: f.accuracy,
@@ -313,7 +369,8 @@ function Workspace({
     });
   };
 
-  const selectedSite = sites.data?.find((s) => s.siteId === siteId);
+  const selectedSite = sites.data?.find((s) => s.siteId === (openVisit?.siteId ?? siteId));
+  const running = Boolean(openShiftStart);
 
   return (
     <div className="space-y-4">
@@ -330,69 +387,82 @@ function Workspace({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <MapPin className="size-4" /> GPS position
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {fix ? (
-            <div className="space-y-1 text-sm">
-              <p className="font-mono">
-                {fix.latitude.toFixed(6)}, {fix.longitude.toFixed(6)}
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={fix.accuracy <= 30 ? "default" : "secondary"}>
-                  Accuracy ±{fix.accuracy} m
-                </Badge>
+      {/* Live clock */}
+      <Card className="overflow-hidden">
+        <CardContent className="flex flex-col items-center gap-4 py-8">
+          <Clockface />
+          <p
+            className={`font-mono text-5xl font-semibold tabular-nums ${
+              running ? "text-primary" : "text-foreground"
+            }`}
+          >
+            {formatDuration(workSeconds)}
+          </p>
+          <Badge variant={running ? "default" : "secondary"} className="gap-1">
+            <Clock className="size-3.5" />
+            {running
+              ? `Working since ${hhmm(openShiftStart!)}`
+              : completed > 0
+                ? `Done for today · ${formatShort(completed)}`
+                : "Not clocked in"}
+          </Badge>
+
+          <Button
+            size="lg"
+            className="w-full max-w-xs"
+            variant={running ? "destructive" : "default"}
+            disabled={busy || status.isLoading}
+            onClick={toggleDay}
+          >
+            {running ? <Square className="size-4" /> : <Play className="size-4" />}
+            {busy ? "Saving…" : running ? "Clock out" : "Clock in"}
+          </Button>
+
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <MapPin className="size-3.5" />
+            {fix ? (
+              <>
+                <span className="font-mono">
+                  {fix.latitude.toFixed(5)}, {fix.longitude.toFixed(5)}
+                </span>
+                <span>±{fix.accuracy} m</span>
                 <a
-                  className="text-xs underline underline-offset-4"
+                  className="underline underline-offset-4"
                   href={`https://www.google.com/maps?q=${fix.latitude},${fix.longitude}`}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Open in Google Maps
+                  Map
                 </a>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {gpsError ?? "Getting your location…"}
-            </p>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refreshFix().catch(() => toast.error(gpsError ?? "GPS unavailable."))}
-          >
-            Refresh GPS
-          </Button>
+              </>
+            ) : (
+              <span>{gpsError ?? "Getting your location…"}</span>
+            )}
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 underline underline-offset-4"
+              onClick={() => refreshFix().catch(() => toast.error(gpsError ?? "GPS unavailable."))}
+            >
+              <RefreshCw className="size-3" /> Refresh
+            </button>
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Work day</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3">
-          <Button disabled={busy} onClick={() => day("CHECK_IN")}>
-            <LogIn className="size-4" /> Start day
-          </Button>
-          <Button variant="secondary" disabled={busy} onClick={() => day("CHECK_OUT")}>
-            <LogOut className="size-4" /> End day
-          </Button>
-        </CardContent>
-      </Card>
-
+      {/* Site visit */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Building2 className="size-4" /> Site visit
+            {openVisit ? (
+              <span className="ml-auto font-mono text-sm tabular-nums text-primary">
+                {formatDuration(visitSeconds)}
+              </span>
+            ) : null}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Select value={siteId} onValueChange={setSiteId}>
+          <Select value={siteId} onValueChange={setSiteId} disabled={Boolean(openVisit)}>
             <SelectTrigger>
               <SelectValue placeholder={sites.isLoading ? "Loading sites…" : "Select a site"} />
             </SelectTrigger>
@@ -406,9 +476,9 @@ function Workspace({
           </Select>
 
           {selectedSite ? (
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              {fix ? <ShieldCheck className="size-3.5" /> : <ShieldAlert className="size-3.5" />}
+            <p className="text-xs text-muted-foreground">
               {selectedSite.address} · geofence {selectedSite.radius} m
+              {openVisit ? ` · on site since ${hhmm(openVisit.startedAt)}` : ""}
             </p>
           ) : null}
 
@@ -419,17 +489,61 @@ function Workspace({
             rows={3}
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button disabled={busy} onClick={() => visit("SITE_CHECK_IN")}>
-              Site check-in
-            </Button>
-            <Button variant="secondary" disabled={busy} onClick={() => visit("SITE_CHECK_OUT")}>
-              Site check-out
-            </Button>
-          </div>
+          <Button
+            className="w-full"
+            variant={openVisit ? "destructive" : "secondary"}
+            disabled={busy}
+            onClick={toggleVisit}
+          >
+            {openVisit ? "Site check-out" : "Site check-in"}
+          </Button>
         </CardContent>
       </Card>
 
+      {/* Today's timeline */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Today’s activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {status.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : (status.data?.events.length ?? 0) === 0 ? (
+            <p className="text-sm text-muted-foreground">No activity logged yet today.</p>
+          ) : (
+            <ol className="space-y-3">
+              {status.data!.events.map((e, i) => (
+                <li key={`${e.timestamp}-${i}`} className="flex items-start gap-3 text-sm">
+                  <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />
+                  <div className="flex-1">
+                    <p className="font-medium">{e.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {hhmm(e.timestamp)}
+                      {typeof e.distance === "number" ? ` · ${e.distance} m from site` : ""}
+                      {e.notes ? ` · ${e.notes}` : ""}
+                    </p>
+                  </div>
+                  {e.withinGeofence === false ? (
+                    <Badge variant="destructive">Outside</Badge>
+                  ) : null}
+                  {e.mapLink ? (
+                    <a
+                      className="text-xs underline underline-offset-4"
+                      href={e.mapLink}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Map
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Tracking */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
