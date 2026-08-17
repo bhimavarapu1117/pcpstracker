@@ -329,6 +329,8 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
     } catch (err) {
       setFrozenWorkSeconds(null);
       toast.error(err instanceof Error ? err.message : "Something went wrong.");
+      await status.refetch().catch(() => undefined);
+
     } finally {
       setBusy(false);
     }
