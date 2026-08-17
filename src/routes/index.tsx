@@ -286,10 +286,11 @@ function Clockface() {
 
 function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Session; onLogout: () => void; dayOpen: boolean; setDayOpen: (v: boolean) => void; }) {
   const sitesFn = useServerFn(listSites);
+  const refreshSitesFn = useServerFn(refreshSites);
   const statusFn = useServerFn(getTodayStatus);
   const attendanceFn = useServerFn(recordAttendance);
   const visitFn = useServerFn(recordSiteVisit);
-  
+  const queryClient = useQueryClient();
 
   const [fix, setFix] = useState<Fix | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
@@ -297,7 +298,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const [siteId, setSiteId] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [frozenWorkSeconds, setFrozenWorkSeconds] = useState<number | null>(null);
-
+  const [refreshingSites, setRefreshingSites] = useState(false);
 
   const sites = useQuery({
     queryKey: ["sites"],
@@ -312,6 +313,19 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
     queryFn: () => statusFn({ data: { employeeId: session.employeeId } }),
     refetchOnWindowFocus: true,
   });
+
+  const handleRefreshSites = async () => {
+    setRefreshingSites(true);
+    try {
+      const fresh = await refreshSitesFn({});
+      queryClient.setQueryData(["sites"], fresh);
+      toast.success("Sites refreshed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to refresh sites.");
+    } finally {
+      setRefreshingSites(false);
+    }
+  };
 
   const openShiftStart = status.data?.openShiftStart ?? null;
   const openVisit = status.data?.openVisit ?? null;
