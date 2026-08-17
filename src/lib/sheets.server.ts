@@ -492,7 +492,7 @@ export async function readTodayForEmployee(employeeId: string) {
   const date = isoDate();
   const [attendanceRows, visitRows] = await Promise.all([
     readRange(ATTENDANCE_RANGE),
-    readRange("SiteVisits!A2:O2000"),
+    readRange(SITEVISITS_RANGE),
   ]);
 
   const mine = parseShifts(attendanceRows)
@@ -504,19 +504,14 @@ export async function readTodayForEmployee(employeeId: string) {
     )
     .sort((a, b) => (a.loginIso ?? a.logoutIso ?? "").localeCompare(b.loginIso ?? b.logoutIso ?? ""));
 
-  const myVisits = visitRows
-    .filter((r) => r[1] === date && String(r[2]) === employeeId)
-    .map((r) => ({
-      timestamp: String(r[0]),
-      siteId: String(r[4]),
-      siteName: String(r[5]),
-      action: String(r[7]),
-      distance: Number(r[11]) || 0,
-      withinGeofence: String(r[12]) === "YES",
-      mapLink: String(r[13] ?? ""),
-      notes: String(r[14] ?? ""),
-    }))
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const myVisits = parseVisits(visitRows)
+    .filter(
+      (v) =>
+        v.employeeId === employeeId &&
+        ((v.inIso && isoDate(new Date(v.inIso)) === date) ||
+          (v.outIso && isoDate(new Date(v.outIso)) === date)),
+    )
+    .sort((a, b) => (a.inIso ?? a.outIso ?? "").localeCompare(b.inIso ?? b.outIso ?? ""));
 
   let openShiftStart: string | null = null;
   let completedSeconds = 0;
@@ -533,10 +528,8 @@ export async function readTodayForEmployee(employeeId: string) {
 
   let openVisit: { siteId: string; siteName: string; startedAt: string } | null = null;
   for (const v of myVisits) {
-    if (v.action === "SITE_CHECK_IN") {
-      openVisit = { siteId: v.siteId, siteName: v.siteName, startedAt: v.timestamp };
-    } else if (v.action === "SITE_CHECK_OUT") {
-      openVisit = null;
+    if (v.inIso && !v.outIso) {
+      openVisit = { siteId: v.siteId, siteName: v.siteName, startedAt: v.inIso };
     }
   }
 
@@ -562,15 +555,30 @@ export async function readTodayForEmployee(employeeId: string) {
       return out;
     }),
 
-    ...myVisits.map((v) => ({
-      timestamp: v.timestamp,
-      type: v.action as DayEvent["type"],
-      label: `${v.siteName} — ${v.action === "SITE_CHECK_IN" ? "site in" : "site out"}`,
-      mapLink: v.mapLink,
-      distance: v.distance,
-      withinGeofence: v.withinGeofence,
-      notes: v.notes,
-    })),
+    ...myVisits.flatMap((v) => {
+      const out: DayEvent[] = [];
+      if (v.inIso)
+        out.push({
+          timestamp: v.inIso,
+          type: "SITE_CHECK_IN",
+          label: `${v.siteName} — site in`,
+          mapLink: v.mapLink,
+          distance: v.distance,
+          withinGeofence: v.withinGeofence,
+          notes: v.notes,
+        });
+      if (v.outIso)
+        out.push({
+          timestamp: v.outIso,
+          type: "SITE_CHECK_OUT",
+          label: `${v.siteName} — site out`,
+          mapLink: v.mapLink,
+          distance: v.distance,
+          withinGeofence: v.withinGeofence,
+          notes: v.notes,
+        });
+      return out;
+    }),
   ].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return {
