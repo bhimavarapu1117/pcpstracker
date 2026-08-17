@@ -216,8 +216,6 @@ function AdminPage() {
                   ])}
                 />
               </TabsContent>
-
-
               <TabsContent value="visits">
                 <TableCard
                   head={["Time", "Employee", "Site", "Action", "Distance", "Geofence", "Map"]}
