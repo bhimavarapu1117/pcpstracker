@@ -363,15 +363,33 @@ export async function buildAdminData(date: string) {
   const roster = employees
     .filter((e) => e.active)
     .map((e) => {
-      const own = attendance.filter((a) => a.employeeId === e.employeeId);
+      const own = attendance
+        .filter((a) => a.employeeId === e.employeeId)
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
       const checkIn = own.find((a) => a.action === "CHECK_IN");
       const checkOut = [...own].reverse().find((a) => a.action === "CHECK_OUT");
+
+      let openSince: string | null = null;
+      let completedSeconds = 0;
+      for (const row of own) {
+        if (row.action === "CHECK_IN") openSince = row.timestamp;
+        else if (row.action === "CHECK_OUT" && openSince) {
+          completedSeconds += Math.max(
+            0,
+            (new Date(row.timestamp).getTime() - new Date(openSince).getTime()) / 1000,
+          );
+          openSince = null;
+        }
+      }
+
       return {
         employeeId: e.employeeId,
         name: e.name,
         phone: e.phone,
         checkIn: checkIn ? timeLabel(checkIn.timestamp) : "",
         checkOut: checkOut ? timeLabel(checkOut.timestamp) : "",
+        openSince,
+        completedSeconds: Math.round(completedSeconds),
         visits: visits.filter(
           (v) => v.employeeId === e.employeeId && v.action === "SITE_CHECK_IN",
         ).length,
@@ -381,6 +399,7 @@ export async function buildAdminData(date: string) {
 
   return {
     date,
+    serverNow: new Date().toISOString(),
     spreadsheetUrl: SPREADSHEET_URL,
     roster,
     sites,
@@ -390,11 +409,25 @@ export async function buildAdminData(date: string) {
     totals: {
       present: roster.filter((r) => r.checkIn).length,
       employees: roster.length,
+      stillIn: roster.filter((r) => r.openSince).length,
+      hours:
+        Math.round(
+          (roster.reduce(
+            (sum, r) =>
+              sum +
+              r.completedSeconds +
+              (r.openSince ? (Date.now() - new Date(r.openSince).getTime()) / 1000 : 0),
+            0,
+          ) /
+            3600) *
+            10,
+        ) / 10,
       visits: visits.filter((v) => v.action === "SITE_CHECK_IN").length,
       outsideGeofence: visits.filter((v) => !v.withinGeofence).length,
     },
   };
 }
+
 
 export function renderDailyReportHtml(data: AdminData) {
   const rows = data.roster
