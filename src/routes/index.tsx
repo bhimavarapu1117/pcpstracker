@@ -222,14 +222,14 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
           </div>
           <Button
             type="submit"
-            className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90"
+            className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
             disabled={busy}
           >
             {busy ? "Checking…" : "Sign in"}
           </Button>
           <Link
             to="/admin"
-            className="block w-full rounded-full border bg-card px-4 py-2 text-center text-sm font-medium"
+            className="block w-full rounded-full border bg-card px-4 py-2 text-center text-sm font-medium transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
           >
             Admin
           </Link>
