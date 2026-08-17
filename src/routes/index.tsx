@@ -465,7 +465,6 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
                 setDayOpen(false);
               }}
             >
-              {running ? <Square className="size-4" /> : <Play className="size-4" />}
               {busy ? "Saving…" : running ? "Logout" : "Login"}
             </Button>
 
