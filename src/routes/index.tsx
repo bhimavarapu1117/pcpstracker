@@ -280,6 +280,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const [busy, setBusy] = useState(false);
   const [siteId, setSiteId] = useState<string>("");
   const [notes, setNotes] = useState("");
+  const [frozenWorkSeconds, setFrozenWorkSeconds] = useState<number | null>(null);
 
 
   const sites = useQuery({ queryKey: ["sites"], queryFn: () => sitesFn({}) });
