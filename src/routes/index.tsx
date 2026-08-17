@@ -126,45 +126,44 @@ function FieldApp() {
   };
 
   return (
-    <main
-      className={
-        session ? "min-h-screen" : "flex min-h-screen items-center justify-center"
-      }
-    >
-      <div className={session ? "mx-auto max-w-2xl px-4 py-5" : "w-full max-w-2xl px-4 py-5"}>
-        {session ? (
-          <header className="flex items-center justify-between gap-3 rounded-full border bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
-            <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-7 w-auto" />
-            <Link
-              to="/admin"
-              className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background transition-colors hover:bg-primary hover:text-primary-foreground"
-            >
-              Admin
-            </Link>
-          </header>
+    <main className="min-h-screen">
+      <div className="mx-auto max-w-2xl px-4 py-5">
+        {ready && session ? (
+          <>
+            <header className="flex items-center justify-between gap-3 rounded-full border bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
+              <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-7 w-auto" />
+              <Link
+                to="/admin"
+                className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background transition-colors hover:bg-primary hover:text-primary-foreground"
+              >
+                Admin
+              </Link>
+            </header>
+            <div className="mt-6">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                Hi, <span className="text-primary">{session.name}</span>
+              </h1>
+              <p className="text-sm text-muted-foreground">Here’s your day on the field.</p>
+            </div>
+            <div className="py-5">
+              <Workspace session={session} onLogout={signOut} />
+            </div>
+          </>
         ) : null}
-
-        {session ? (
-          <div className="mt-6">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Hi, <span className="text-primary">{session.name}</span>
-            </h1>
-            <p className="text-sm text-muted-foreground">Here’s your day on the field.</p>
-          </div>
-        ) : null}
-
-        <div className={session ? "py-5" : ""}>
-          {!ready ? null : session ? (
-            <Workspace session={session} onLogout={signOut} />
-          ) : (
-            <LoginCard onLogin={signIn} />
-          )}
-        </div>
       </div>
+
+      <Dialog open={ready && !session} onOpenChange={() => {}}>
+        <DialogContent
+          className="rounded-3xl sm:max-w-sm [&>button]:hidden"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <LoginCard onLogin={signIn} />
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
-
 
 function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
   const login = useServerFn(loginEmployee);
@@ -191,60 +190,57 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
   }
 
   return (
-    <Card className="mx-auto max-w-md rounded-3xl border-0 bg-card/85 shadow-lg backdrop-blur">
-      <CardHeader className="items-center pb-2">
-        <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-16 w-auto" />
-        <CardTitle className="sr-only">Employee sign in</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="employeeId">Employee ID</Label>
-            <Input
-              id="employeeId"
-              className="rounded-full"
-              value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
-              placeholder="EMP001"
-              autoComplete="username"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pin">PIN</Label>
-            <Input
-              id="pin"
-              type="password"
-              inputMode="numeric"
-              className="rounded-full"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              placeholder="••••"
-              autoComplete="current-password"
-              required
-            />
-          </div>
-          <Button
-            type="submit"
-            className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-            disabled={busy}
-          >
-            {busy ? "Checking…" : "Sign in"}
-          </Button>
-          <Link
-            to="/admin"
-            className="block w-full rounded-full border bg-card px-4 py-2 text-center text-sm font-medium transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
-          >
-            Admin
-          </Link>
-          <p className="text-center text-xs text-muted-foreground">Demo login: EMP001 / 1234</p>
-
-        </form>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center">
+      <DialogHeader>
+        <DialogTitle className="sr-only">Employee sign in</DialogTitle>
+      </DialogHeader>
+      <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="mb-6 h-16 w-auto" />
+      <form onSubmit={submit} className="w-full space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="employeeId">Employee ID</Label>
+          <Input
+            id="employeeId"
+            className="rounded-full"
+            value={employeeId}
+            onChange={(e) => setEmployeeId(e.target.value)}
+            placeholder="EMP001"
+            autoComplete="username"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="pin">PIN</Label>
+          <Input
+            id="pin"
+            type="password"
+            inputMode="numeric"
+            className="rounded-full"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder="••••"
+            autoComplete="current-password"
+            required
+          />
+        </div>
+        <Button
+          type="submit"
+          className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+          disabled={busy}
+        >
+          {busy ? "Checking…" : "Sign in"}
+        </Button>
+        <Link
+          to="/admin"
+          className="block w-full rounded-full border bg-card px-4 py-2 text-center text-sm font-medium transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+        >
+          Admin
+        </Link>
+        <p className="text-center text-xs text-muted-foreground">Demo login: EMP001 / 1234</p>
+      </form>
+    </div>
   );
-
 }
+
 
 function Clockface() {
   const [now, setNow] = useState<Date | null>(null);
