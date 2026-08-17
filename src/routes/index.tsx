@@ -409,6 +409,12 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   };
 
   const selectedSite = sites.data?.find((s) => s.siteId === (openVisit?.siteId ?? siteId));
+  const siteDistance =
+    selectedSite && fix
+      ? distanceMeters(fix.latitude, fix.longitude, selectedSite.latitude, selectedSite.longitude)
+      : null;
+  const inGeofence =
+    siteDistance !== null && selectedSite ? siteDistance <= selectedSite.radius : null;
   const running = Boolean(openShiftStart);
 
   return (
