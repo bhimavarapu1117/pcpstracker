@@ -487,6 +487,8 @@ function AdminPage() {
                       "-"
                     ),
                   ])}
+                  page={rosterPage}
+                  onPageChange={setRosterPage}
                 />
               </TabsContent>
               <TabsContent value="visits" className="mt-0">
