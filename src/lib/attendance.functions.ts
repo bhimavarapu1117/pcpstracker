@@ -110,6 +110,6 @@ export const forceCloseVisitAdmin = createServerFn({ method: "POST" })
       return { success: false as const, message: "Incorrect admin passcode." };
     }
     const { forceCloseVisit } = await import("./sheets.server");
-    const res = await forceCloseVisit({ sheetRow: data.sheetRow, notes: data.notes });
-    return { success: true as const, ...res };
+    const res = await forceCloseVisit({ sheetRow: data.sheetRow, ...(data.notes ? { notes: data.notes } : {}) });
+    return res;
   });
