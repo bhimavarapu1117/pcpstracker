@@ -644,132 +644,118 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
       {/* Activity timeline */}
       <Card className="rounded-3xl border-0 shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-            <div className="order-2 lg:order-1">
-              {status.isLoading ? (
-                <p className="text-sm text-muted-foreground">Loading…</p>
-              ) : filteredEvents.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No activity for this period.</p>
-              ) : (
-                <>
-                  <ol className="space-y-3">
-                    {pagedEvents.map((e, i) => (
-                      <li key={`${e.timestamp}-${i}`} className="flex items-start gap-3 text-sm">
-                        <span
-                          className={cn(
-                            "mt-1 size-2 shrink-0 rounded-full",
-                            e.type === "CHECK_IN" && "bg-google-green",
-                            e.type === "CHECK_OUT" && "bg-destructive",
-                            e.type !== "CHECK_IN" && e.type !== "CHECK_OUT" && "bg-primary",
-                          )}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium">{e.label}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDateTime(e.timestamp)}
-                            {e.notes ? ` · ${e.notes}` : ""}
-                          </p>
-                        </div>
-                        {e.withinGeofence === false ? (
-                          <Badge variant="destructive" className="shrink-0">
-                            Outside
-                          </Badge>
-                        ) : e.withinGeofence === true ? (
-                          <Badge className="shrink-0 bg-google-green text-google-green-foreground hover:bg-google-green/90">
-                            Inside
-                          </Badge>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ol>
-
-                  <div className="mt-4 flex items-center justify-between gap-2">
-                    <p className="text-xs text-muted-foreground">
-                      {rangeStart}–{rangeEnd} of {filteredEvents.length}
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full"
-                        disabled={safePage <= 1}
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      >
-                        Previous
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full"
-                        disabled={safePage >= totalPages}
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="order-1 lg:order-2">
-              <div className="rounded-2xl bg-muted/50 p-4 space-y-4">
-                <p className="text-sm font-medium">Filter activity</p>
-                <Select
-                  value={rangeKey}
-                  onValueChange={(v) => {
-                    setRangeKey(v);
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger className="h-9 rounded-full bg-card">
-                    <SelectValue placeholder="Select range" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="yesterday">Yesterday</SelectItem>
-                    <SelectItem value="7d">Last 7 days</SelectItem>
-                    <SelectItem value="30d">Last 30 days</SelectItem>
-                    <SelectItem value="all">All time</SelectItem>
-                    <SelectItem value="custom">Custom dates</SelectItem>
-                  </SelectContent>
-                </Select>
-                {rangeKey === "custom" ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="from" className="text-xs text-muted-foreground">
-                      From
-                    </Label>
-                    <Input
-                      id="from"
-                      type="date"
-                      value={customFrom}
-                      onChange={(e) => {
-                        setCustomFrom(e.target.value);
-                        setPage(1);
-                      }}
-                      className="h-9 rounded-full bg-card"
-                    />
-                    <Label htmlFor="to" className="text-xs text-muted-foreground">
-                      To
-                    </Label>
-                    <Input
-                      id="to"
-                      type="date"
-                      value={customTo}
-                      onChange={(e) => {
-                        setCustomTo(e.target.value);
-                        setPage(1);
-                      }}
-                      className="h-9 rounded-full bg-card"
-                    />
-                  </div>
-                ) : null}
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="text-base">Recent Activity</CardTitle>
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+              <Select
+                value={rangeKey}
+                onValueChange={(v) => {
+                  setRangeKey(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[150px] rounded-full">
+                  <SelectValue placeholder="Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="yesterday">Yesterday</SelectItem>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="custom">Custom dates</SelectItem>
+                </SelectContent>
+              </Select>
+              {rangeKey === "custom" ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => {
+                      setCustomFrom(e.target.value);
+                      setPage(1);
+                    }}
+                    className="h-9 w-[140px] rounded-full"
+                  />
+                  <Input
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => {
+                      setCustomTo(e.target.value);
+                      setPage(1);
+                    }}
+                    className="h-9 w-[140px] rounded-full"
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
+        </CardHeader>
+        <CardContent>
+          {status.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : filteredEvents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No activity for this period.</p>
+          ) : (
+            <>
+              <ol className="space-y-3">
+                {pagedEvents.map((e, i) => (
+                  <li key={`${e.timestamp}-${i}`} className="flex items-start gap-3 text-sm">
+                    <span
+                      className={cn(
+                        "mt-1 size-2 shrink-0 rounded-full",
+                        e.type === "CHECK_IN" && "bg-google-green",
+                        e.type === "CHECK_OUT" && "bg-destructive",
+                        e.type !== "CHECK_IN" && e.type !== "CHECK_OUT" && "bg-primary",
+                      )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{e.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDateTime(e.timestamp)}
+                        {e.notes ? ` · ${e.notes}` : ""}
+                      </p>
+                    </div>
+                    {e.withinGeofence === false ? (
+                      <Badge variant="destructive" className="shrink-0">
+                        Outside
+                      </Badge>
+                    ) : e.withinGeofence === true ? (
+                      <Badge className="shrink-0 bg-google-green text-google-green-foreground hover:bg-google-green/90">
+                        Inside
+                      </Badge>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+
+              <div className="mt-4 flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {rangeStart}–{rangeEnd} of {filteredEvents.length}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    disabled={safePage <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    disabled={safePage >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
