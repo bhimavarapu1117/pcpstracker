@@ -364,6 +364,13 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
       toast.error("Select a site first.");
       return;
     }
+    if (openVisit && siteId && siteId !== openVisit.siteId) {
+      toast.error(
+        `You are still checked in at ${openVisit.siteName}. Check out from there before starting a new site visit.`,
+      );
+      return;
+    }
+
     return withFix(async (f) => {
       const res = await visitFn({
         data: {
