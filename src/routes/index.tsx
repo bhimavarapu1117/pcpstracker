@@ -93,6 +93,22 @@ function getFix(): Promise<Fix> {
   });
 }
 
+function distanceMeters(
+  aLat: number,
+  aLng: number,
+  bLat: number,
+  bLng: number,
+) {
+  const R = 6371000;
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(h)));
+}
+
 function hhmm(iso: string) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
@@ -393,6 +409,12 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   };
 
   const selectedSite = sites.data?.find((s) => s.siteId === (openVisit?.siteId ?? siteId));
+  const siteDistance =
+    selectedSite && fix
+      ? distanceMeters(fix.latitude, fix.longitude, selectedSite.latitude, selectedSite.longitude)
+      : null;
+  const inGeofence =
+    siteDistance !== null && selectedSite ? siteDistance <= selectedSite.radius : null;
   const running = Boolean(openShiftStart);
 
   return (
@@ -521,10 +543,27 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
           </Select>
 
           {selectedSite ? (
-            <p className="text-xs text-muted-foreground">
-              {selectedSite.address}
-              {openVisit ? ` · on site since ${hhmm(openVisit.startedAt)}` : ""}
-            </p>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                {selectedSite.address}
+                {openVisit ? ` · on site since ${hhmm(openVisit.startedAt)}` : ""}
+              </p>
+              {inGeofence === null ? (
+                <Badge variant="secondary" className="gap-1">
+                  <MapPin className="size-3.5" /> Checking geofence…
+                </Badge>
+              ) : inGeofence ? (
+                <Badge className="gap-1 bg-google-green text-google-green-foreground hover:bg-google-green/90">
+                  <MapPin className="size-3.5" /> On site — in geofence ({siteDistance} m of{" "}
+                  {selectedSite.radius} m)
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="gap-1">
+                  <MapPin className="size-3.5" /> Outside geofence · {siteDistance} m away (limit{" "}
+                  {selectedSite.radius} m)
+                </Badge>
+              )}
+            </div>
           ) : null}
 
           <Textarea
