@@ -23,6 +23,8 @@ import {
   getAdminData,
   listOpenVisitsAdmin,
   forceCloseVisitAdmin,
+  listOpenShiftsAdmin,
+  forceCloseShiftAdmin,
 } from "@/lib/attendance.functions";
 import popsLogo from "@/assets/pops-logo-transparent.png";
 
