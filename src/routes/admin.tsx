@@ -153,12 +153,28 @@ function AdminPage() {
               </a>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat label="Present today" value={`${data.totals.present}/${data.totals.employees}`} />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <Stat label="Present" value={`${data.totals.present}/${data.totals.employees}`} />
+              <Stat label="Still clocked in" value={String(data.totals.stillIn)} />
+              <Stat label="Total hours" value={`${data.totals.hours}h`} />
               <Stat label="Site visits" value={String(data.totals.visits)} />
               <Stat label="Outside geofence" value={String(data.totals.outsideGeofence)} />
-              <Stat label="Active sites" value={String(data.sites.length)} />
             </div>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Who’s in right now</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {data.roster.filter((r) => r.openSince).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nobody is clocked in.</p>
+                ) : (
+                  data.roster
+                    .filter((r) => r.openSince)
+                    .map((r) => <LiveRow key={r.employeeId} row={r} />)
+                )}
+              </CardContent>
+            </Card>
 
             <Tabs defaultValue="roster">
               <TabsList>
@@ -170,12 +186,13 @@ function AdminPage() {
 
               <TabsContent value="roster">
                 <TableCard
-                  head={["Employee", "ID", "Check in", "Check out", "Visits", "Last seen"]}
+                  head={["Employee", "ID", "Check in", "Check out", "Worked", "Visits", "Last seen"]}
                   rows={data.roster.map((r) => [
                     r.name,
                     r.employeeId,
                     r.checkIn || "-",
-                    r.checkOut || "-",
+                    r.checkOut || (r.openSince ? "Running" : "-"),
+                    <WorkedCell openSince={r.openSince} completedSeconds={r.completedSeconds} />,
                     String(r.visits),
                     r.lastSeen ? (
                       <a
@@ -192,6 +209,7 @@ function AdminPage() {
                   ])}
                 />
               </TabsContent>
+
 
               <TabsContent value="visits">
                 <TableCard
