@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useElapsed, formatDuration } from "@/hooks/use-elapsed";
 import { getAdminData } from "@/lib/attendance.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -153,12 +154,28 @@ function AdminPage() {
               </a>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat label="Present today" value={`${data.totals.present}/${data.totals.employees}`} />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <Stat label="Present" value={`${data.totals.present}/${data.totals.employees}`} />
+              <Stat label="Still clocked in" value={String(data.totals.stillIn)} />
+              <Stat label="Total hours" value={`${data.totals.hours}h`} />
               <Stat label="Site visits" value={String(data.totals.visits)} />
               <Stat label="Outside geofence" value={String(data.totals.outsideGeofence)} />
-              <Stat label="Active sites" value={String(data.sites.length)} />
             </div>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Who’s in right now</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {data.roster.filter((r) => r.openSince).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nobody is clocked in.</p>
+                ) : (
+                  data.roster
+                    .filter((r) => r.openSince)
+                    .map((r) => <LiveRow key={r.employeeId} row={r} />)
+                )}
+              </CardContent>
+            </Card>
 
             <Tabs defaultValue="roster">
               <TabsList>
@@ -170,12 +187,13 @@ function AdminPage() {
 
               <TabsContent value="roster">
                 <TableCard
-                  head={["Employee", "ID", "Check in", "Check out", "Visits", "Last seen"]}
+                  head={["Employee", "ID", "Check in", "Check out", "Worked", "Visits", "Last seen"]}
                   rows={data.roster.map((r) => [
                     r.name,
                     r.employeeId,
                     r.checkIn || "-",
-                    r.checkOut || "-",
+                    r.checkOut || (r.openSince ? "Running" : "-"),
+                    <WorkedCell openSince={r.openSince} completedSeconds={r.completedSeconds} />,
                     String(r.visits),
                     r.lastSeen ? (
                       <a
@@ -192,6 +210,7 @@ function AdminPage() {
                   ])}
                 />
               </TabsContent>
+
 
               <TabsContent value="visits">
                 <TableCard
@@ -296,5 +315,51 @@ function TableCard({ head, rows }: { head: string[]; rows: React.ReactNode[][] }
         </Table>
       </CardContent>
     </Card>
+  );
+}
+
+type RosterRow = Admin["roster"][number];
+
+function WorkedCell({
+  openSince,
+  completedSeconds,
+}: {
+  openSince: string | null;
+  completedSeconds: number;
+}) {
+  const seconds = useElapsed(openSince, completedSeconds);
+  return (
+    <span className={openSince ? "font-mono tabular-nums text-primary" : "font-mono tabular-nums"}>
+      {formatDuration(seconds)}
+    </span>
+  );
+}
+
+function LiveRow({ row }: { row: RosterRow }) {
+  const seconds = useElapsed(row.openSince, row.completedSeconds);
+  return (
+    <div className="flex items-center justify-between rounded-md border p-3">
+      <div>
+        <p className="text-sm font-medium">{row.name}</p>
+        <p className="text-xs text-muted-foreground">
+          {row.employeeId} · in at {row.checkIn || "-"} · {row.visits} site visit(s)
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        {row.lastSeen ? (
+          <a
+            className="text-xs underline underline-offset-4"
+            href={row.lastSeen.mapLink}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Last location
+          </a>
+        ) : null}
+        <span className="font-mono text-lg tabular-nums text-primary">
+          {formatDuration(seconds)}
+        </span>
+      </div>
+    </div>
   );
 }
