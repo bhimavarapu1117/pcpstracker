@@ -337,6 +337,11 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const toggleDay = () =>
     withFix(async (f) => {
       const action = openShiftStart ? "CHECK_OUT" : "CHECK_IN";
+      if (action === "CHECK_OUT") {
+        setFrozenWorkSeconds(workSeconds);
+      } else {
+        setFrozenWorkSeconds(null);
+      }
       await attendanceFn({
         data: {
           employeeId: session.employeeId,
