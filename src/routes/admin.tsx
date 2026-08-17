@@ -106,7 +106,7 @@ function AdminPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="w-full rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   disabled={busy}
                 >
                   {busy ? "Loading…" : "Open dashboard"}
@@ -114,7 +114,7 @@ function AdminPage() {
                 <div className="flex justify-center">
                   <Link
                     to="/"
-                    className="text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-primary hover:underline"
+                    className="text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-destructive hover:underline"
                   >
                     Employee app
                   </Link>
@@ -169,7 +169,6 @@ function AdminPage() {
             </div>
 
             <Card className="rounded-3xl border-0 shadow-sm">
-
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Who’s in right now</CardTitle>
               </CardHeader>
@@ -217,8 +216,6 @@ function AdminPage() {
                   ])}
                 />
               </TabsContent>
-
-
               <TabsContent value="visits">
                 <TableCard
                   head={["Time", "Employee", "Site", "Action", "Distance", "Geofence", "Map"]}
