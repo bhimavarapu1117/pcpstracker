@@ -11,6 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -27,6 +34,7 @@ import {
   forceCloseShiftAdmin,
 } from "@/lib/attendance.functions";
 import popsLogo from "@/assets/pops-logo-transparent.png";
+
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -88,6 +96,12 @@ function AdminPage() {
   const [closingRow, setClosingRow] = useState<number | null>(null);
   const [closingShiftRow, setClosingShiftRow] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [filterKey, setFilterKey] = useState<string>("today");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [rosterPage, setRosterPage] = useState(1);
+  const [visitsPage, setVisitsPage] = useState(1);
+
 
   async function loadOpenVisits(code = passcode) {
     try {
@@ -239,6 +253,9 @@ function AdminPage() {
                     value={date}
                     onChange={(e) => {
                       setDate(e.target.value);
+                      setFilterKey("custom");
+                      setRosterPage(1);
+                      setVisitsPage(1);
                       load(passcode, e.target.value);
                     }}
                   />
@@ -268,7 +285,64 @@ function AdminPage() {
                   <LogOut className="size-4" /> Sign out
                 </Button>
               </div>
+
+              <div className="flex flex-wrap items-end justify-end gap-2">
+                <Select
+                  value={filterKey}
+                  onValueChange={(v) => {
+                    setFilterKey(v);
+                    setRosterPage(1);
+                    setVisitsPage(1);
+                    if (v === "custom") return;
+                    const day = 86_400_000;
+                    const now = new Date();
+                    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                    let targetDate = now;
+                    if (v === "today") targetDate = new Date(startOfToday);
+                    else if (v === "yesterday") targetDate = new Date(startOfToday - day);
+                    else if (v === "7d") targetDate = new Date(startOfToday - 6 * day);
+                    else if (v === "30d") targetDate = new Date(startOfToday - 29 * day);
+                    const nextDate = targetDate.toISOString().slice(0, 10);
+                    setDate(nextDate);
+                    load(passcode, nextDate);
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-[150px] rounded-full bg-card shadow-sm">
+                    <SelectValue placeholder="Filter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                    <SelectItem value="7d">Last 7 days</SelectItem>
+                    <SelectItem value="30d">Last 30 days</SelectItem>
+                    <SelectItem value="custom">Custom dates</SelectItem>
+                  </SelectContent>
+                </Select>
+                {filterKey === "custom" ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      value={customFrom}
+                      onChange={(e) => {
+                        setCustomFrom(e.target.value);
+                        setDate(e.target.value);
+                        setRosterPage(1);
+                        setVisitsPage(1);
+                        if (e.target.value) load(passcode, e.target.value);
+                      }}
+                      className="h-9 w-[140px] rounded-full bg-card shadow-sm"
+                    />
+                    <Input
+                      type="date"
+                      value={customTo}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="h-9 w-[140px] rounded-full bg-card shadow-sm"
+                    />
+                  </div>
+                ) : null}
+              </div>
             </div>
+
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <HeroStat
@@ -413,6 +487,8 @@ function AdminPage() {
                       "-"
                     ),
                   ])}
+                  page={rosterPage}
+                  onPageChange={setRosterPage}
                 />
               </TabsContent>
               <TabsContent value="visits" className="mt-0">
@@ -436,6 +512,8 @@ function AdminPage() {
                     </Badge>,
                     <MapLink href={v.mapLink} />,
                   ])}
+                  page={visitsPage}
+                  onPageChange={setVisitsPage}
                 />
               </TabsContent>
               <TabsContent value="sites" className="mt-0">
@@ -541,7 +619,25 @@ function MapLink({ href }: { href: string }) {
   );
 }
 
-function TableCard({ head, rows }: { head: string[]; rows: React.ReactNode[][] }) {
+function TableCard({
+  head,
+  rows,
+  page,
+  onPageChange,
+}: {
+  head: string[];
+  rows: React.ReactNode[][];
+  page?: number;
+  onPageChange?: (page: number) => void;
+}) {
+  const pageSize = 10;
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const safePage = page ? Math.min(page, totalPages) : 1;
+  const pagedRows = page ? rows.slice((safePage - 1) * pageSize, safePage * pageSize) : rows;
+  const rangeStart = totalRows === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const rangeEnd = Math.min(safePage * pageSize, totalRows);
+
   return (
     <Card className="mt-4 rounded-3xl border-0 shadow-sm">
       <CardContent className="overflow-x-auto p-0">
@@ -554,14 +650,14 @@ function TableCard({ head, rows }: { head: string[]; rows: React.ReactNode[][] }
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.length === 0 ? (
+            {pagedRows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={head.length} className="text-center text-muted-foreground">
                   No records for this day.
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((row, i) => (
+              pagedRows.map((row, i) => (
                 <TableRow key={i}>
                   {row.map((cell, j) => (
                     <TableCell key={j}>{cell}</TableCell>
@@ -572,6 +668,33 @@ function TableCard({ head, rows }: { head: string[]; rows: React.ReactNode[][] }
           </TableBody>
         </Table>
       </CardContent>
+      {page && onPageChange && totalRows > pageSize ? (
+        <div className="flex items-center justify-between border-t px-5 py-3">
+          <p className="text-xs text-muted-foreground">
+            {rangeStart}–{rangeEnd} of {totalRows}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={safePage <= 1}
+              onClick={() => onPageChange(Math.max(1, safePage - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={safePage >= totalPages}
+              onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </Card>
   );
 }
