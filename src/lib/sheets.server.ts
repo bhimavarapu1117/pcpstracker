@@ -505,7 +505,7 @@ export async function buildAdminData(date: string) {
   const [employees, sites, attendanceRows, visitRows, locationRows] = await Promise.all([
     getEmployees(),
     getSites(),
-    readRange("Attendance!A2:J2000"),
+    readRange(ATTENDANCE_RANGE),
     readRange("SiteVisits!A2:O2000"),
     readRange("LocationLogs!A2:H2000"),
   ]);
