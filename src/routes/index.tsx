@@ -140,8 +140,8 @@ function FieldApp() {
       <div className="mx-auto max-w-2xl px-4 py-5">
         {ready && session ? (
           <>
-            <header className="flex items-center justify-center gap-3 rounded-full border bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
-              <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-7 w-auto" />
+            <header className="flex items-center justify-center py-2">
+              <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-10 w-auto" />
             </header>
             <div className="mt-6">
               <h1 className="text-2xl font-semibold tracking-tight">
