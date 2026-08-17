@@ -432,7 +432,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
       <Dialog open={dayOpen} onOpenChange={setDayOpen}>
         <DialogContent className="rounded-3xl sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-center text-base">{session.employeeId}</DialogTitle>
+            <DialogTitle className="text-center text-base">{session.name} · {session.employeeId}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 pb-2">
             <Clockface />
