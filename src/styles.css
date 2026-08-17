@@ -141,11 +141,17 @@
 
   body {
     background-color: var(--color-background);
-    background-image: radial-gradient(
-      120% 80% at 100% 0%,
-      color-mix(in oklab, var(--color-primary) 10%, transparent),
-      transparent 60%
-    );
+    background-image: linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--color-chart-3) 45%, transparent),
+        transparent 55%
+      ),
+      radial-gradient(
+        100% 60% at 50% 0%,
+        color-mix(in oklab, var(--color-primary) 8%, transparent),
+        transparent 70%
+      );
+
     background-attachment: fixed;
     color: var(--color-foreground);
     font-family: "DM Sans", system-ui, sans-serif;
