@@ -53,12 +53,52 @@ const time = (iso: string) => {
     : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
 };
 
+type OpenVisit = {
+  sheetRow: number;
+  employeeId: string;
+  employeeName: string;
+  siteName: string;
+  inIso: string | null;
+};
+
 function AdminPage() {
   const fetchAdmin = useServerFn(getAdminData);
+  const fetchOpenVisits = useServerFn(listOpenVisitsAdmin);
+  const closeVisit = useServerFn(forceCloseVisitAdmin);
   const [passcode, setPasscode] = useState("");
   const [date, setDate] = useState(today());
   const [data, setData] = useState<Admin | null>(null);
+  const [openVisits, setOpenVisits] = useState<OpenVisit[]>([]);
+  const [closingRow, setClosingRow] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+
+  async function loadOpenVisits(code = passcode) {
+    try {
+      const res = await fetchOpenVisits({ data: { passcode: code } });
+      if (res.success) setOpenVisits(res.visits);
+    } catch {
+      /* non-critical */
+    }
+  }
+
+  async function forceClose(v: OpenVisit) {
+    setClosingRow(v.sheetRow);
+    try {
+      const res = await closeVisit({
+        data: { passcode, sheetRow: v.sheetRow, notes: "Force-closed by admin" },
+      });
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      toast.success(`Closed ${v.employeeName}'s visit at ${v.siteName}`);
+      await Promise.all([load(), loadOpenVisits()]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not close the visit.");
+    } finally {
+      setClosingRow(null);
+    }
+  }
 
   async function load(code = passcode, day = date) {
     setBusy(true);
@@ -69,12 +109,14 @@ function AdminPage() {
         return;
       }
       setData(res.data);
+      await loadOpenVisits(code);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load dashboard.");
     } finally {
       setBusy(false);
     }
   }
+
 
   return (
     <main className={!data ? "flex min-h-screen items-center justify-center" : "min-h-screen"}>
