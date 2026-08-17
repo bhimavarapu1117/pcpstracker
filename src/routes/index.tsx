@@ -299,7 +299,14 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const [frozenWorkSeconds, setFrozenWorkSeconds] = useState<number | null>(null);
 
 
-  const sites = useQuery({ queryKey: ["sites"], queryFn: () => sitesFn({}) });
+  const sites = useQuery({
+    queryKey: ["sites"],
+    queryFn: () => sitesFn({}),
+    staleTime: 0,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+  });
   const status = useQuery({
     queryKey: ["today", session.employeeId],
     queryFn: () => statusFn({ data: { employeeId: session.employeeId } }),
