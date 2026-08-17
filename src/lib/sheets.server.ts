@@ -24,21 +24,47 @@ function authHeaders() {
 }
 
 async function gateway(path: string, init?: RequestInit) {
-  const res = await fetch(`${GATEWAY_URL}${path}`, {
-    ...init,
-    headers: authHeaders(),
-  });
-  if (!res.ok) {
+  let attempt = 0;
+  // Sheets enforces a per-minute read quota; back off instead of hammering it.
+  while (true) {
+    const res = await fetch(`${GATEWAY_URL}${path}`, {
+      ...init,
+      headers: authHeaders(),
+    });
+    if (res.ok) return res.json();
     const body = await res.text();
+    if (res.status === 429 && attempt < 3) {
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1200 * 2 ** attempt;
+      attempt += 1;
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
     console.error(`Sheets request failed [${res.status}]: ${body}`);
     throw new Error(`Google Sheets request failed [${res.status}]: ${body}`);
   }
-  return res.json();
+}
+
+/* ---------- short-lived read cache (quota protection) ---------- */
+
+const READ_TTL_MS = 15_000;
+const readCache = new Map<string, { at: number; value: Promise<string[][]> }>();
+
+function invalidateReads() {
+  readCache.clear();
 }
 
 export async function readRange(range: string): Promise<string[][]> {
-  const data = await gateway(`/spreadsheets/${SPREADSHEET_ID}/values/${range}`);
-  return (data.values as string[][]) ?? [];
+  const cached = readCache.get(range);
+  if (cached && Date.now() - cached.at < READ_TTL_MS) return cached.value;
+  const value = gateway(`/spreadsheets/${SPREADSHEET_ID}/values/${range}`)
+    .then((data) => ((data.values as string[][]) ?? []))
+    .catch((err) => {
+      readCache.delete(range);
+      throw err;
+    });
+  readCache.set(range, { at: Date.now(), value });
+  return value;
 }
 
 export async function appendRow(range: string, row: (string | number)[]) {
@@ -46,7 +72,9 @@ export async function appendRow(range: string, row: (string | number)[]) {
     `/spreadsheets/${SPREADSHEET_ID}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
     { method: "POST", body: JSON.stringify({ values: [row] }) },
   );
+  invalidateReads();
 }
+
 
 /* ---------- helpers ---------- */
 
