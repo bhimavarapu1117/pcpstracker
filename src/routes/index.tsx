@@ -567,7 +567,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{e.label}</p>
                     <p className="text-xs text-muted-foreground">
-                      {hhmm(e.timestamp)}
+                      {formatDateTime(e.timestamp)}
                       {e.notes ? ` · ${e.notes}` : ""}
                     </p>
                   </div>
