@@ -234,7 +234,7 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
         </Button>
         <Link
           to="/admin"
-          className="block w-full rounded-full border bg-card px-4 py-2 text-center text-sm font-medium transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+          className="block w-full rounded-full border bg-card px-4 py-2 text-center text-sm font-medium transition-colors hover:border-destructive hover:bg-destructive hover:text-destructive-foreground"
         >
           Admin
         </Link>
