@@ -92,7 +92,7 @@ function hhmm(iso: string) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? "-"
-    : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
 function FieldApp() {
@@ -242,7 +242,13 @@ function Clockface() {
   if (!now) return <p className="text-sm text-muted-foreground">&nbsp;</p>;
   return (
     <p className="text-sm text-muted-foreground">
-      {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })} ·{" "}
+      {now.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })}{" "}
+      ·{" "}
       {now.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })}
     </p>
   );
