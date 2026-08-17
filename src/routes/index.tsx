@@ -7,7 +7,7 @@ import {
   Play,
   Square,
   Satellite,
-  Radio,
+  
   Building2,
   Clock,
   RefreshCw,
@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+
 import {
   Select,
   SelectContent,
@@ -36,7 +36,7 @@ import {
   listSites,
   recordAttendance,
   recordSiteVisit,
-  recordLocation,
+  
   getTodayStatus,
 } from "@/lib/attendance.functions";
 
@@ -253,15 +253,13 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
   const statusFn = useServerFn(getTodayStatus);
   const attendanceFn = useServerFn(recordAttendance);
   const visitFn = useServerFn(recordSiteVisit);
-  const locationFn = useServerFn(recordLocation);
+  
 
   const [fix, setFix] = useState<Fix | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [siteId, setSiteId] = useState<string>("");
   const [notes, setNotes] = useState("");
-  const [tracking, setTracking] = useState(false);
-  const [pings, setPings] = useState(0);
 
   const sites = useQuery({ queryKey: ["sites"], queryFn: () => sitesFn({}) });
   const status = useQuery({
@@ -297,36 +295,6 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
     refreshFix().catch(() => undefined);
   }, [refreshFix]);
 
-  useEffect(() => {
-    if (!tracking) return;
-    let cancelled = false;
-
-    const ping = async () => {
-      try {
-        const next = await getFix();
-        if (cancelled) return;
-        setFix(next);
-        await locationFn({
-          data: {
-            employeeId: session.employeeId,
-            latitude: next.latitude,
-            longitude: next.longitude,
-            accuracy: next.accuracy,
-          },
-        });
-        if (!cancelled) setPings((p) => p + 1);
-      } catch {
-        /* keep trying on the next tick */
-      }
-    };
-
-    ping();
-    const id = setInterval(ping, LOCATION_INTERVAL);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [tracking, locationFn, session.employeeId]);
 
   async function withFix(run: (f: Fix) => Promise<void>) {
     setBusy(true);
