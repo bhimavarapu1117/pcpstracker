@@ -381,22 +381,21 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardContent className="flex items-center justify-between gap-4 py-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Signed in as</p>
-            <p className="font-semibold">{session.name}</p>
-            <p className="text-xs text-muted-foreground">{session.employeeId}</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={onLogout}>
-            Sign out
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>{session.employeeId}</span>
+        <button
+          type="button"
+          onClick={onLogout}
+          className="rounded-full border bg-card px-3 py-1 font-medium text-foreground"
+        >
+          Sign out
+        </button>
+      </div>
 
       {/* Live clock */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-sm">
         <CardContent className="flex flex-col items-center gap-4 py-8">
+
           <Clockface />
           <p
             className={`font-mono text-5xl font-semibold tabular-nums ${
