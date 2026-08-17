@@ -228,7 +228,14 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
           >
             {busy ? "Checking…" : "Sign in"}
           </Button>
+          <Link
+            to="/admin"
+            className="block w-full rounded-full border bg-card px-4 py-2 text-center text-sm font-medium"
+          >
+            Admin
+          </Link>
           <p className="text-center text-xs text-muted-foreground">Demo login: EMP001 / 1234</p>
+
         </form>
       </CardContent>
     </Card>
