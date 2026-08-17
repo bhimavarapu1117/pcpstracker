@@ -392,8 +392,28 @@ export async function writeAttendance(data: GeoPayload & { action: string }) {
   return { success: true, mapLink: link, employeeName: name };
 }
 
+export async function listOpenShifts() {
+  const rows = await readRangeFresh(ATTENDANCE_RANGE);
+  return rows
+    .map((r, i) => ({ r: r ?? [], sheetRow: i + 2 }))
+    .filter(
+      ({ r }) => String(r[0] ?? "").trim() && String(r[2] ?? "").trim() && !String(r[5] ?? "").trim(),
+    )
+    .map(({ r, sheetRow }) => ({
+      sheetRow,
+      employeeId: String(r[0]).trim(),
+      employeeName: String(r[1] ?? ""),
+      inIso: istToIso(String(r[4] ?? ""), String(r[3] ?? "")),
+    }));
+}
+
 /** Admin force-closes an open shift row; logout is marked as done by admin. */
 export async function forceCloseShift(sheetRow: number, notes?: string) {
+  const rows = await readRangeFresh(ATTENDANCE_RANGE);
+  const row = rows[sheetRow - 2];
+  if (!row || !String(row[0] ?? "").trim()) throw new Error("Shift row not found.");
+  if (String(row[5] ?? "").trim()) throw new Error("This shift is already logged out.");
+
   const now = new Date();
   await updateRange(`Attendance!F${sheetRow}:H${sheetRow}`, [
     ["LOGGED OUT BY ADMIN", istTime(now), istDate(now)],
@@ -401,8 +421,13 @@ export async function forceCloseShift(sheetRow: number, notes?: string) {
   await updateRange(`Attendance!J${sheetRow}`, [
     [notes || "Logged out by admin (employee did not log out)"],
   ]);
-  return { success: true };
+  return {
+    success: true as const,
+    employeeId: String(row[0]).trim(),
+    employeeName: String(row[1] ?? ""),
+  };
 }
+
 
 
 

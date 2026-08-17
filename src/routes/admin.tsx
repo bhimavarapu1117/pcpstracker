@@ -23,6 +23,8 @@ import {
   getAdminData,
   listOpenVisitsAdmin,
   forceCloseVisitAdmin,
+  listOpenShiftsAdmin,
+  forceCloseShiftAdmin,
 } from "@/lib/attendance.functions";
 import popsLogo from "@/assets/pops-logo-transparent.png";
 
@@ -65,21 +67,41 @@ type OpenVisit = {
   inIso: string | null;
 };
 
+type OpenShift = {
+  sheetRow: number;
+  employeeId: string;
+  employeeName: string;
+  inIso: string | null;
+};
+
 function AdminPage() {
   const fetchAdmin = useServerFn(getAdminData);
   const fetchOpenVisits = useServerFn(listOpenVisitsAdmin);
   const closeVisit = useServerFn(forceCloseVisitAdmin);
+  const fetchOpenShifts = useServerFn(listOpenShiftsAdmin);
+  const closeShift = useServerFn(forceCloseShiftAdmin);
   const [passcode, setPasscode] = useState("");
   const [date, setDate] = useState(today());
   const [data, setData] = useState<Admin | null>(null);
   const [openVisits, setOpenVisits] = useState<OpenVisit[]>([]);
+  const [openShifts, setOpenShifts] = useState<OpenShift[]>([]);
   const [closingRow, setClosingRow] = useState<number | null>(null);
+  const [closingShiftRow, setClosingShiftRow] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function loadOpenVisits(code = passcode) {
     try {
       const res = await fetchOpenVisits({ data: { passcode: code } });
       if (res.success) setOpenVisits(res.visits);
+    } catch {
+      /* non-critical */
+    }
+  }
+
+  async function loadOpenShifts(code = passcode) {
+    try {
+      const res = await fetchOpenShifts({ data: { passcode: code } });
+      if (res.success) setOpenShifts(res.shifts);
     } catch {
       /* non-critical */
     }
@@ -104,6 +126,29 @@ function AdminPage() {
     }
   }
 
+  async function forceLogout(s: OpenShift) {
+    setClosingShiftRow(s.sheetRow);
+    try {
+      const res = await closeShift({
+        data: {
+          passcode,
+          sheetRow: s.sheetRow,
+          notes: "Logged out by admin (employee did not log out)",
+        },
+      });
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      toast.success(`Logged out ${s.employeeName || s.employeeId}`);
+      await Promise.all([load(), loadOpenShifts()]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not log the employee out.");
+    } finally {
+      setClosingShiftRow(null);
+    }
+  }
+
   async function load(code = passcode, day = date) {
     setBusy(true);
     try {
@@ -113,13 +158,14 @@ function AdminPage() {
         return;
       }
       setData(res.data);
-      await loadOpenVisits(code);
+      await Promise.all([loadOpenVisits(code), loadOpenShifts(code)]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load dashboard.");
     } finally {
       setBusy(false);
     }
   }
+
 
 
   return (
@@ -277,15 +323,51 @@ function AdminPage() {
               </CardContent>
             </Card>
 
-
+            <Card className="rounded-3xl border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Open logins</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {openShifts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Nobody is waiting for a logout.
+                  </p>
+                ) : (
+                  openShifts.map((s) => (
+                    <div
+                      key={s.sheetRow}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {s.employeeName || s.employeeId}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Logged in {s.inIso ? time(s.inIso) : "-"} · still open
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-full"
+                        disabled={closingShiftRow === s.sheetRow}
+                        onClick={() => forceLogout(s)}
+                      >
+                        {closingShiftRow === s.sheetRow ? "Logging out…" : "Force logout"}
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
 
             <Tabs defaultValue="roster">
               <TabsList className="rounded-full bg-card p-1 shadow-sm">
                 <TabsTrigger className="rounded-full px-4" value="roster">Attendance</TabsTrigger>
                 <TabsTrigger className="rounded-full px-4" value="visits">Site visits</TabsTrigger>
-                <TabsTrigger className="rounded-full px-4" value="history">Location history</TabsTrigger>
                 <TabsTrigger className="rounded-full px-4" value="sites">Sites</TabsTrigger>
               </TabsList>
+
 
               <TabsContent value="roster">
                 <TableCard
@@ -329,19 +411,7 @@ function AdminPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="history">
-                <TableCard
-                  head={["Time", "Employee", "Latitude", "Longitude", "Accuracy", "Map"]}
-                  rows={data.locations.map((l) => [
-                    time(l.timestamp),
-                    l.employeeName,
-                    l.latitude.toFixed(6),
-                    l.longitude.toFixed(6),
-                    `±${l.accuracy} m`,
-                    <MapLink href={l.mapLink} />,
-                  ])}
-                />
-              </TabsContent>
+
 
               <TabsContent value="sites">
                 <TableCard
