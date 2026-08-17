@@ -386,7 +386,22 @@ export async function writeSiteVisit(data: GeoPayload & { action: string; siteId
   const link = mapsLink(data.latitude, data.longitude);
 
   if (data.action === "SITE_CHECK_IN") {
+    // Guard: only one open visit at a time per employee.
+    const existing = await readRangeFresh(SITEVISITS_RANGE);
+    const open = existing.find(
+      (r) =>
+        String(r?.[0] ?? "").trim() === data.employeeId &&
+        String(r?.[4] ?? "").trim() &&
+        !String(r?.[7] ?? "").trim(),
+    );
+    if (open) {
+      const openSite = String(open[3] ?? "the previous site");
+      throw new Error(
+        `You are still checked in at ${openSite}. Check out from there before starting a new site visit.`,
+      );
+    }
     await appendRow("SiteVisits!A:N", [
+
       data.employeeId,
       name,
       site.siteId,
