@@ -295,6 +295,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const completed = status.data?.completedSeconds ?? 0;
 
   const workSeconds = useElapsed(openShiftStart, completed);
+  const displayedWorkSeconds = frozenWorkSeconds ?? workSeconds;
   const visitSeconds = useElapsed(openVisit?.startedAt ?? null, 0);
 
   useEffect(() => {
