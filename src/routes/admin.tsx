@@ -165,7 +165,7 @@ function AdminPage() {
                     Employee app
                   </Link>
                 </div>
-                <p className="text-center text-xs text-muted-foreground">&nbsp;</p>
+                
               </form>
             </CardContent>
           </Card>
