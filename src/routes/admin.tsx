@@ -172,7 +172,7 @@ function AdminPage() {
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <Stat label="Present" value={`${data.totals.present}/${data.totals.employees}`} />
-              <Stat label="Still clocked in" value={String(data.totals.stillIn)} />
+              <Stat label="Still logged in" value={String(data.totals.stillIn)} />
               <Stat label="Total hours" value={`${data.totals.hours}h`} />
               <Stat label="Site visits" value={String(data.totals.visits)} />
               <Stat label="Outside geofence" value={String(data.totals.outsideGeofence)} />
@@ -184,7 +184,7 @@ function AdminPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {data.roster.filter((r) => r.openSince).length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nobody is clocked in.</p>
+                  <p className="text-sm text-muted-foreground">Nobody is logged in.</p>
                 ) : (
                   data.roster
                     .filter((r) => r.openSince)
@@ -203,7 +203,7 @@ function AdminPage() {
 
               <TabsContent value="roster">
                 <TableCard
-                  head={["Employee", "ID", "Check in", "Check out", "Worked", "Visits", "Last seen"]}
+                  head={["Employee", "ID", "Login", "Logout", "Worked", "Visits", "Last seen"]}
                   rows={data.roster.map((r) => [
                     r.name,
                     r.employeeId,

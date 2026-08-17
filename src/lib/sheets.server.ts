@@ -333,7 +333,7 @@ export async function readTodayForEmployee(employeeId: string) {
     ...mine.map((r) => ({
       timestamp: r.timestamp,
       type: r.action as DayEvent["type"],
-      label: r.action === "CHECK_IN" ? "Clocked in" : "Clocked out",
+      label: r.action === "CHECK_IN" ? "Logged in" : "Logged out",
       mapLink: r.mapLink,
       notes: r.notes,
     })),
