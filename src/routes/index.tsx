@@ -175,7 +175,7 @@ function FieldApp() {
       <Dialog open={ready && !session} onOpenChange={() => {}}>
         <DialogContent
           overlayClassName="bg-transparent"
-          className="rounded-3xl border-0 bg-card/85 shadow-lg backdrop-blur sm:max-w-sm [&>button]:hidden"
+          className="w-[calc(100%-2rem)] max-w-[22rem] rounded-3xl border-0 bg-card/85 p-5 shadow-lg backdrop-blur sm:w-full sm:max-w-sm sm:p-6 [&>button]:hidden"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
