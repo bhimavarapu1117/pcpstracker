@@ -299,7 +299,14 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const [frozenWorkSeconds, setFrozenWorkSeconds] = useState<number | null>(null);
 
 
-  const sites = useQuery({ queryKey: ["sites"], queryFn: () => sitesFn({}) });
+  const sites = useQuery({
+    queryKey: ["sites"],
+    queryFn: () => sitesFn({}),
+    staleTime: 0,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+  });
   const status = useQuery({
     queryKey: ["today", session.employeeId],
     queryFn: () => statusFn({ data: { employeeId: session.employeeId } }),
@@ -619,6 +626,10 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
                   {e.withinGeofence === false ? (
                     <Badge variant="destructive" className="shrink-0">
                       Outside
+                    </Badge>
+                  ) : e.withinGeofence === true ? (
+                    <Badge className="shrink-0 bg-google-green text-google-green-foreground hover:bg-google-green/90">
+                      Inside
                     </Badge>
                   ) : null}
                 </li>
