@@ -559,7 +559,14 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
             <ol className="space-y-3">
               {status.data!.events.map((e, i) => (
                 <li key={`${e.timestamp}-${i}`} className="flex items-start gap-3 text-sm">
-                  <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />
+                  <span
+                    className={cn(
+                      "mt-1 size-2 shrink-0 rounded-full",
+                      e.type === "CHECK_IN" && "bg-google-green",
+                      e.type === "CHECK_OUT" && "bg-destructive",
+                      e.type !== "CHECK_IN" && e.type !== "CHECK_OUT" && "bg-primary",
+                    )}
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{e.label}</p>
                     <p className="text-xs text-muted-foreground">
