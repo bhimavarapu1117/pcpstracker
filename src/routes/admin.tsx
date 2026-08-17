@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowUpRight, ExternalLink, LayoutDashboard, RefreshCw } from "lucide-react";
+import { ArrowUpRight, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -78,22 +78,6 @@ function AdminPage() {
   return (
     <main className="min-h-screen">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-5">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-full border bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
-          <div className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-full bg-accent text-accent-foreground">
-              <LayoutDashboard className="size-4" />
-            </span>
-            <span className="text-sm font-semibold tracking-tight">Attendance Tracker</span>
-          </div>
-
-          <nav className="flex items-center gap-1 text-xs font-medium">
-            <span className="rounded-full bg-foreground px-4 py-1.5 text-background">Dashboard</span>
-            <Link to="/" className="rounded-full px-4 py-1.5 text-muted-foreground hover:bg-muted">
-              Employee app
-            </Link>
-          </nav>
-        </header>
-
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             Good day, <span className="text-primary">Admin</span>
@@ -102,6 +86,7 @@ function AdminPage() {
             Here’s what’s happening with your field crew today.
           </p>
         </div>
+
 
         {!data ? (
           <Card className="mx-auto max-w-md">
@@ -129,7 +114,16 @@ function AdminPage() {
                 <Button type="submit" className="w-full" disabled={busy}>
                   {busy ? "Loading…" : "Open dashboard"}
                 </Button>
+                <div className="flex justify-center">
+                  <Link
+                    to="/"
+                    className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                  >
+                    Employee app
+                  </Link>
+                </div>
                 <p className="text-center text-xs text-muted-foreground">Default passcode: 2468</p>
+
               </form>
             </CardContent>
           </Card>
