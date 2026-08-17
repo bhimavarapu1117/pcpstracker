@@ -478,7 +478,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
               onClick={onLogout}
               className="text-xs font-medium text-muted-foreground underline underline-offset-4"
             >
-              Sign out of app
+              Sign out
             </button>
           </div>
         </DialogContent>
