@@ -166,7 +166,8 @@ function AdminPage() {
               <Stat label="Outside geofence" value={String(data.totals.outsideGeofence)} />
             </div>
 
-            <Card>
+            <Card className="rounded-3xl border-0 shadow-sm">
+
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Who’s in right now</CardTitle>
               </CardHeader>
