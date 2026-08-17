@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ExternalLink, LayoutDashboard, RefreshCw } from "lucide-react";
+import { ArrowUpRight, ExternalLink, LayoutDashboard, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -74,28 +74,32 @@ function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+    <main className="min-h-screen">
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-5">
+        <header className="flex flex-wrap items-center justify-between gap-3 rounded-full border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <LayoutDashboard className="size-5" />
+            <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <LayoutDashboard className="size-4" />
             </span>
-            <div>
-              <h1 className="text-base font-semibold leading-tight">Admin dashboard</h1>
-              <p className="text-xs text-muted-foreground">Attendance, site visits & GPS history</p>
-            </div>
+            <span className="text-sm font-semibold tracking-tight">fieldtrack</span>
           </div>
-          <Link
-            to="/"
-            className="text-xs font-medium text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Employee app
-          </Link>
-        </div>
-      </header>
+          <nav className="flex items-center gap-1 text-xs font-medium">
+            <span className="rounded-full bg-foreground px-4 py-1.5 text-background">Dashboard</span>
+            <Link to="/" className="rounded-full px-4 py-1.5 text-muted-foreground hover:bg-muted">
+              Employee app
+            </Link>
+          </nav>
+        </header>
 
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Good day, <span className="text-primary">Admin</span>
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Here’s what’s happening with your field crew today.
+          </p>
+        </div>
+
         {!data ? (
           <Card className="mx-auto max-w-md">
             <CardHeader>
@@ -162,7 +166,8 @@ function AdminPage() {
               <Stat label="Outside geofence" value={String(data.totals.outsideGeofence)} />
             </div>
 
-            <Card>
+            <Card className="rounded-3xl border-0 shadow-sm">
+
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Who’s in right now</CardTitle>
               </CardHeader>
@@ -178,11 +183,11 @@ function AdminPage() {
             </Card>
 
             <Tabs defaultValue="roster">
-              <TabsList>
-                <TabsTrigger value="roster">Attendance</TabsTrigger>
-                <TabsTrigger value="visits">Site visits</TabsTrigger>
-                <TabsTrigger value="history">Location history</TabsTrigger>
-                <TabsTrigger value="sites">Sites</TabsTrigger>
+              <TabsList className="rounded-full bg-card p-1 shadow-sm">
+                <TabsTrigger className="rounded-full px-4" value="roster">Attendance</TabsTrigger>
+                <TabsTrigger className="rounded-full px-4" value="visits">Site visits</TabsTrigger>
+                <TabsTrigger className="rounded-full px-4" value="history">Location history</TabsTrigger>
+                <TabsTrigger className="rounded-full px-4" value="sites">Sites</TabsTrigger>
               </TabsList>
 
               <TabsContent value="roster">
@@ -265,14 +270,18 @@ function AdminPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <Card>
+    <Card className="relative rounded-3xl border-0 shadow-sm">
       <CardContent className="py-5">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="mt-1 text-2xl font-semibold">{value}</p>
+        <span className="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <ArrowUpRight className="size-3.5" />
+        </span>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p>
       </CardContent>
     </Card>
   );
 }
+
 
 function MapLink({ href }: { href: string }) {
   if (!href) return <span>-</span>;
@@ -285,7 +294,7 @@ function MapLink({ href }: { href: string }) {
 
 function TableCard({ head, rows }: { head: string[]; rows: React.ReactNode[][] }) {
   return (
-    <Card className="mt-4">
+    <Card className="mt-4 rounded-3xl border-0 shadow-sm">
       <CardContent className="overflow-x-auto p-0">
         <Table>
           <TableHeader>
