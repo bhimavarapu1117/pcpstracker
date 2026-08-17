@@ -114,7 +114,16 @@ function AdminPage() {
                 <Button type="submit" className="w-full" disabled={busy}>
                   {busy ? "Loading…" : "Open dashboard"}
                 </Button>
+                <div className="flex justify-center">
+                  <Link
+                    to="/"
+                    className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                  >
+                    Employee app
+                  </Link>
+                </div>
                 <p className="text-center text-xs text-muted-foreground">Default passcode: 2468</p>
+
               </form>
             </CardContent>
           </Card>
