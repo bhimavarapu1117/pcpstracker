@@ -28,7 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import popsLogo from "@/assets/pops-logo.png.asset.json";
 import { useElapsed, formatDuration, formatShort } from "@/hooks/use-elapsed";
+
 import {
   loginEmployee,
   listSites,
@@ -119,13 +121,14 @@ function FieldApp() {
   return (
     <main className="min-h-screen">
       <div className="mx-auto max-w-2xl px-4 py-5">
-        <header className="flex items-center justify-between gap-3 rounded-full border bg-card px-3 py-2 shadow-sm">
+        <header className="flex items-center justify-between gap-3 rounded-full border bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
           <div className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <span className="flex size-9 items-center justify-center rounded-full bg-accent text-accent-foreground">
               <Satellite className="size-4" />
             </span>
-            <span className="text-sm font-semibold tracking-tight">fieldtrack</span>
+            <span className="text-sm font-semibold tracking-tight">Attendance Tracker</span>
           </div>
+
           <Link
             to="/admin"
             className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background"
@@ -181,9 +184,10 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Employee sign in</CardTitle>
+    <Card className="mx-auto max-w-md rounded-3xl border-0 bg-card/85 shadow-lg backdrop-blur">
+      <CardHeader className="items-center pb-2">
+        <img src={popsLogo.url} alt="POPS Pest Care Pvt Ltd logo" className="h-16 w-auto" />
+        <CardTitle className="sr-only">Employee sign in</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={submit} className="space-y-4">
@@ -191,6 +195,7 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
             <Label htmlFor="employeeId">Employee ID</Label>
             <Input
               id="employeeId"
+              className="rounded-full"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
               placeholder="EMP001"
@@ -204,6 +209,7 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
               id="pin"
               type="password"
               inputMode="numeric"
+              className="rounded-full"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               placeholder="••••"
@@ -211,7 +217,11 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={busy}>
+          <Button
+            type="submit"
+            className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90"
+            disabled={busy}
+          >
             {busy ? "Checking…" : "Sign in"}
           </Button>
           <p className="text-center text-xs text-muted-foreground">Demo login: EMP001 / 1234</p>
@@ -219,6 +229,7 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
       </CardContent>
     </Card>
   );
+
 }
 
 function Clockface() {
