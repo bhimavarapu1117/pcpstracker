@@ -489,6 +489,54 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function HeroStat({
+  tone,
+  label,
+  value,
+  filled,
+  total,
+}: {
+  tone: "dark" | "blue";
+  label: string;
+  value: string;
+  filled: number;
+  total: number;
+}) {
+  const count = Math.max(total, 1);
+  const on = Math.max(0, Math.min(filled, count));
+  return (
+    <Card
+      className={
+        tone === "dark"
+          ? "rounded-3xl border-0 bg-foreground text-background shadow-sm"
+          : "rounded-3xl border-0 bg-primary text-primary-foreground shadow-sm"
+      }
+    >
+      <CardContent className="space-y-4 py-5">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 items-center justify-center rounded-full bg-background/20">
+            <ArrowUpRight className="size-3.5" />
+          </span>
+          <span className="text-sm font-medium">{label}</span>
+        </div>
+        <p className="text-4xl font-semibold tracking-tight">{value}</p>
+        <div className="flex gap-1.5">
+          {Array.from({ length: count }).map((_, i) => (
+            <span
+              key={i}
+              className={
+                i < on
+                  ? "h-8 w-3.5 rounded-full bg-background"
+                  : "h-8 w-3.5 rounded-full border border-dashed border-background/50"
+              }
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function MapLink({ href }: { href: string }) {
   if (!href) return <span>-</span>;
