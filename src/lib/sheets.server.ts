@@ -510,17 +510,26 @@ export async function buildAdminData(date: string) {
     readRange("LocationLogs!A2:H2000"),
   ]);
 
-  const attendance = attendanceRows
-    .filter((r) => r[1] === date)
-    .map((r) => ({
-      timestamp: String(r[0]),
-      employeeId: String(r[2]),
-      employeeName: String(r[3]),
-      action: String(r[4]),
-      accuracy: Number(r[7]) || 0,
-      mapLink: String(r[8] ?? ""),
-      notes: String(r[9] ?? ""),
-    }));
+  const shifts = parseShifts(attendanceRows).filter(
+    (s) =>
+      (s.loginIso && isoDate(new Date(s.loginIso)) === date) ||
+      (s.logoutIso && isoDate(new Date(s.logoutIso)) === date),
+  );
+
+  const attendance = shifts.flatMap((s) => {
+    const base = {
+      employeeId: s.employeeId,
+      employeeName: s.employeeName,
+      accuracy: 0,
+      mapLink: s.mapLink,
+      notes: s.notes,
+    };
+    const out: (typeof base & { timestamp: string; action: string })[] = [];
+    if (s.loginIso) out.push({ ...base, timestamp: s.loginIso, action: "CHECK_IN" });
+    if (s.logoutIso) out.push({ ...base, timestamp: s.logoutIso, action: "CHECK_OUT" });
+    return out;
+  });
+
 
   const visits = visitRows
     .filter((r) => r[1] === date)
