@@ -268,15 +268,34 @@ export type GeoPayload = {
 /**
  * Attendance sheet layout (one row per shift):
  * A Employee ID | B Employee Name | C Login Status | D Login Time | E Login Date
- * F Logout Status | G Logout Time | H Logout Date | I Google Maps | J Notes
+ * F Logout Status | G Logout Time | H Logout Date
+ * I Admin override | J Override Time | K Override Date
+ * L Google Maps | M Notes
  */
-export const ATTENDANCE_RANGE = "Attendance!A2:J2000";
+export const ATTENDANCE_RANGE = "Attendance!A2:M2000";
+
+export const ATTENDANCE_HEADERS = [
+  "Employee ID",
+  "Employee Name",
+  "Login Status",
+  "Time",
+  "Date",
+  "Logout Status",
+  "Time",
+  "Date",
+  "Admin override",
+  "Time",
+  "Date",
+  "Google Maps",
+  "Notes",
+];
 
 export type Shift = {
   employeeId: string;
   employeeName: string;
   loginIso: string | null;
   logoutIso: string | null;
+  overrideIso: string | null;
   mapLink: string;
   notes: string;
 };
@@ -289,8 +308,9 @@ export function parseShifts(rows: string[][]): Shift[] {
       employeeName: String(r[1] ?? ""),
       loginIso: istToIso(String(r[4] ?? ""), String(r[3] ?? "")),
       logoutIso: istToIso(String(r[7] ?? ""), String(r[6] ?? "")),
-      mapLink: String(r[8] ?? ""),
-      notes: String(r[9] ?? ""),
+      overrideIso: istToIso(String(r[10] ?? ""), String(r[9] ?? "")),
+      mapLink: String(r[11] ?? ""),
+      notes: String(r[12] ?? ""),
     }));
 }
 
@@ -300,12 +320,15 @@ export async function writeAttendance(data: GeoPayload & { action: string }) {
   const link = mapsLink(data.latitude, data.longitude);
 
   if (data.action === "CHECK_IN") {
-    await appendRow("Attendance!A:J", [
+    await appendRow("Attendance!A:M", [
       data.employeeId,
       name,
       "LOGGED IN",
       istTime(now),
       istDate(now),
+      "",
+      "",
+      "",
       "",
       "",
       "",
@@ -327,7 +350,7 @@ export async function writeAttendance(data: GeoPayload & { action: string }) {
   }
 
   if (target === -1) {
-    await appendRow("Attendance!A:J", [
+    await appendRow("Attendance!A:M", [
       data.employeeId,
       name,
       "",
@@ -336,18 +359,40 @@ export async function writeAttendance(data: GeoPayload & { action: string }) {
       "LOGGED OUT",
       istTime(now),
       istDate(now),
+      "",
+      "",
+      "",
       link,
       data.notes ?? "",
     ]);
   } else {
     const sheetRow = target + 2; // data starts at row 2
-    await updateRange(`Attendance!F${sheetRow}:J${sheetRow}`, [
-      ["LOGGED OUT", istTime(now), istDate(now), link, data.notes ?? ""],
+    await updateRange(`Attendance!F${sheetRow}:H${sheetRow}`, [
+      ["LOGGED OUT", istTime(now), istDate(now)],
     ]);
+    await updateRange(`Attendance!L${sheetRow}:M${sheetRow}`, [[link, data.notes ?? ""]]);
   }
 
   return { success: true, mapLink: link, employeeName: name };
 }
+
+/** Admin force-closes an open shift row (fills logout + admin override columns). */
+export async function forceCloseShift(sheetRow: number, notes?: string) {
+  const now = new Date();
+  await updateRange(`Attendance!F${sheetRow}:K${sheetRow}`, [
+    [
+      "LOGGED OUT (ADMIN)",
+      istTime(now),
+      istDate(now),
+      "ADMIN OVERRIDE",
+      istTime(now),
+      istDate(now),
+    ],
+  ]);
+  if (notes) await updateRange(`Attendance!M${sheetRow}`, [[notes]]);
+  return { success: true };
+}
+
 
 
 /**
