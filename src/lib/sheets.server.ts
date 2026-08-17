@@ -66,7 +66,7 @@ const READ_TTL_MS = 45_000;
 type Entry = { at: number; inflight?: Promise<string[][]>; value?: string[][] };
 const readCache = new Map<string, Entry>();
 
-function invalidateReads() {
+export function invalidateReads() {
   // Keep last values as stale fallback, but force a refetch.
   for (const entry of readCache.values()) entry.at = 0;
 }
