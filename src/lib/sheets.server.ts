@@ -404,19 +404,18 @@ export type DayEvent = {
 export async function readTodayForEmployee(employeeId: string) {
   const date = isoDate();
   const [attendanceRows, visitRows] = await Promise.all([
-    readRange("Attendance!A2:J2000"),
+    readRange(ATTENDANCE_RANGE),
     readRange("SiteVisits!A2:O2000"),
   ]);
 
-  const mine = attendanceRows
-    .filter((r) => r[1] === date && String(r[2]) === employeeId)
-    .map((r) => ({
-      timestamp: String(r[0]),
-      action: String(r[4]),
-      mapLink: String(r[8] ?? ""),
-      notes: String(r[9] ?? ""),
-    }))
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const mine = parseShifts(attendanceRows)
+    .filter(
+      (s) =>
+        s.employeeId === employeeId &&
+        ((s.loginIso && isoDate(new Date(s.loginIso)) === date) ||
+          (s.logoutIso && isoDate(new Date(s.logoutIso)) === date)),
+    )
+    .sort((a, b) => (a.loginIso ?? a.logoutIso ?? "").localeCompare(b.loginIso ?? b.logoutIso ?? ""));
 
   const myVisits = visitRows
     .filter((r) => r[1] === date && String(r[2]) === employeeId)
@@ -434,15 +433,14 @@ export async function readTodayForEmployee(employeeId: string) {
 
   let openShiftStart: string | null = null;
   let completedSeconds = 0;
-  for (const row of mine) {
-    if (row.action === "CHECK_IN") {
-      openShiftStart = row.timestamp;
-    } else if (row.action === "CHECK_OUT" && openShiftStart) {
+  for (const s of mine) {
+    if (s.loginIso && s.logoutIso) {
       completedSeconds += Math.max(
         0,
-        (new Date(row.timestamp).getTime() - new Date(openShiftStart).getTime()) / 1000,
+        (new Date(s.logoutIso).getTime() - new Date(s.loginIso).getTime()) / 1000,
       );
-      openShiftStart = null;
+    } else if (s.loginIso && !s.logoutIso) {
+      openShiftStart = s.loginIso;
     }
   }
 
@@ -456,13 +454,27 @@ export async function readTodayForEmployee(employeeId: string) {
   }
 
   const events: DayEvent[] = [
-    ...mine.map((r) => ({
-      timestamp: r.timestamp,
-      type: r.action as DayEvent["type"],
-      label: r.action === "CHECK_IN" ? "Logged in" : "Logged out",
-      mapLink: r.mapLink,
-      notes: r.notes,
-    })),
+    ...mine.flatMap((s) => {
+      const out: DayEvent[] = [];
+      if (s.loginIso)
+        out.push({
+          timestamp: s.loginIso,
+          type: "CHECK_IN",
+          label: "Logged in",
+          mapLink: s.mapLink,
+          notes: s.notes,
+        });
+      if (s.logoutIso)
+        out.push({
+          timestamp: s.logoutIso,
+          type: "CHECK_OUT",
+          label: "Logged out",
+          mapLink: s.mapLink,
+          notes: s.notes,
+        });
+      return out;
+    }),
+
     ...myVisits.map((v) => ({
       timestamp: v.timestamp,
       type: v.action as DayEvent["type"],
