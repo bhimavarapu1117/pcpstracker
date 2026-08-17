@@ -100,6 +100,41 @@ export const listOpenVisitsAdmin = createServerFn({ method: "POST" })
 
   });
 
+export const listOpenShiftsAdmin = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ passcode: z.string().min(1) }).parse(d))
+  .handler(async ({ data }) => {
+    const expected = process.env["ADMIN_PASSCODE"] ?? "2468";
+    if (data.passcode.trim() !== expected) {
+      return { success: false as const, message: "Incorrect admin passcode." };
+    }
+    const { listOpenShifts } = await import("./sheets.server");
+    try {
+      return { success: true as const, shifts: await listOpenShifts() };
+    } catch (err) {
+      console.error("listOpenShiftsAdmin failed", err);
+      return { success: true as const, shifts: [] };
+    }
+  });
+
+export const forceCloseShiftAdmin = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        passcode: z.string().min(1),
+        sheetRow: z.number().int().positive(),
+        notes: z.string().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const expected = process.env["ADMIN_PASSCODE"] ?? "2468";
+    if (data.passcode.trim() !== expected) {
+      return { success: false as const, message: "Incorrect admin passcode." };
+    }
+    const { forceCloseShift } = await import("./sheets.server");
+    return forceCloseShift(data.sheetRow, data.notes);
+  });
+
 export const forceCloseVisitAdmin = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z
@@ -119,3 +154,4 @@ export const forceCloseVisitAdmin = createServerFn({ method: "POST" })
     const res = await forceCloseVisit({ sheetRow: data.sheetRow, ...(data.notes ? { notes: data.notes } : {}) });
     return res;
   });
+
