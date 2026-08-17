@@ -601,7 +601,7 @@ export async function buildAdminData(date: string) {
     getEmployees(),
     getSites(),
     readRange(ATTENDANCE_RANGE),
-    readRange("SiteVisits!A2:O2000"),
+    readRange(SITEVISITS_RANGE),
     readRange("LocationLogs!A2:H2000"),
   ]);
 
