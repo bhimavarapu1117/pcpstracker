@@ -340,6 +340,31 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const displayedWorkSeconds = frozenWorkSeconds ?? workSeconds;
   const visitSeconds = useElapsed(openVisit?.startedAt ?? null, 0);
 
+  const allEvents = status.data?.events ?? [];
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const filteredEvents = allEvents.filter((e) => {
+    const t = new Date(e.timestamp).getTime();
+    if (Number.isNaN(t)) return false;
+    const today = startOfDay(new Date());
+    const day = 86_400_000;
+    if (rangeKey === "today") return t >= today;
+    if (rangeKey === "yesterday") return t >= today - day && t < today;
+    if (rangeKey === "7d") return t >= today - 6 * day;
+    if (rangeKey === "30d") return t >= today - 29 * day;
+    if (rangeKey === "custom") {
+      const from = customFrom ? new Date(`${customFrom}T00:00:00`).getTime() : -Infinity;
+      const to = customTo ? new Date(`${customTo}T23:59:59.999`).getTime() : Infinity;
+      return t >= from && t <= to;
+    }
+    return true;
+  });
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedEvents = filteredEvents.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const rangeStart = filteredEvents.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const rangeEnd = Math.min(safePage * pageSize, filteredEvents.length);
+
   useEffect(() => {
     if (openVisit) setSiteId(openVisit.siteId);
   }, [openVisit]);
