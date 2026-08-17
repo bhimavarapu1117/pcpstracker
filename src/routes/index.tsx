@@ -355,7 +355,7 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
         },
       });
       setNotes("");
-      toast.success(action === "CHECK_IN" ? "Clocked in — timer running" : "Clocked out");
+      toast.success(action === "CHECK_IN" ? "Logged in — timer running" : "Logged out");
     });
 
   const toggleVisit = () => {
@@ -421,7 +421,7 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
               ? `Working since ${hhmm(openShiftStart!)}`
               : completed > 0
                 ? `Done for today · ${formatShort(completed)}`
-                : "Not clocked in"}
+                : "Not logged in"}
           </Badge>
 
           <Button
@@ -432,7 +432,7 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
             onClick={toggleDay}
           >
             {running ? <Square className="size-4" /> : <Play className="size-4" />}
-            {busy ? "Saving…" : running ? "Clock out" : "Clock in"}
+            {busy ? "Saving…" : running ? "Logout" : "Login"}
           </Button>
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -560,29 +560,6 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
         </CardContent>
       </Card>
 
-      {/* Tracking */}
-      <Card className="rounded-3xl border-0 shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Radio className="size-4" /> Live tracking
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Log my location every minute</p>
-              <p className="text-xs text-muted-foreground">
-                {tracking ? `${pings} location(s) logged this session` : "Currently off"}
-              </p>
-            </div>
-            <Switch checked={tracking} onCheckedChange={setTracking} />
-          </div>
-          <p className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
-            Tracking only runs while this page stays open and location permission is granted. For
-            all-day background tracking, a native Android app is the right architecture.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
