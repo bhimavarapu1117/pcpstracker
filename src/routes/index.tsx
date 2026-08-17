@@ -273,6 +273,8 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
   const [busy, setBusy] = useState(false);
   const [siteId, setSiteId] = useState<string>("");
   const [notes, setNotes] = useState("");
+  const [dayOpen, setDayOpen] = useState(false);
+
 
   const sites = useQuery({ queryKey: ["sites"], queryFn: () => sitesFn({}) });
   const status = useQuery({
