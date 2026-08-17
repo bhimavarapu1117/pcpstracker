@@ -183,11 +183,11 @@ function AdminPage() {
             </Card>
 
             <Tabs defaultValue="roster">
-              <TabsList>
-                <TabsTrigger value="roster">Attendance</TabsTrigger>
-                <TabsTrigger value="visits">Site visits</TabsTrigger>
-                <TabsTrigger value="history">Location history</TabsTrigger>
-                <TabsTrigger value="sites">Sites</TabsTrigger>
+              <TabsList className="rounded-full bg-card p-1 shadow-sm">
+                <TabsTrigger className="rounded-full px-4" value="roster">Attendance</TabsTrigger>
+                <TabsTrigger className="rounded-full px-4" value="visits">Site visits</TabsTrigger>
+                <TabsTrigger className="rounded-full px-4" value="history">Location history</TabsTrigger>
+                <TabsTrigger className="rounded-full px-4" value="sites">Sites</TabsTrigger>
               </TabsList>
 
               <TabsContent value="roster">
