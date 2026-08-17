@@ -119,7 +119,12 @@ export function isoDate(d = new Date()) {
 export function timeLabel(value: string) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toISOString().slice(11, 16);
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  });
 }
 
 /* ---------- domain reads ---------- */
