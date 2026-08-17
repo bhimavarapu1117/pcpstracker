@@ -399,7 +399,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
         />
         <span className="min-w-0 flex-1">
           <span className="block font-mono text-lg font-semibold tabular-nums leading-tight">
-            {formatDuration(workSeconds)}
+            {formatDuration(displayedWorkSeconds)}
           </span>
           <span className="block truncate text-xs text-muted-foreground">
             {running
@@ -432,7 +432,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
                 running ? "text-primary" : "text-foreground"
               }`}
             >
-              {formatDuration(workSeconds)}
+            {formatDuration(displayedWorkSeconds)}
             </p>
             <Badge variant={running ? "default" : "secondary"} className="gap-1">
               <Clock className="size-3.5" />
