@@ -37,6 +37,7 @@ import {
 
 import popsLogo from "@/assets/pops-logo-transparent.png";
 import { useElapsed, formatDuration, formatShort } from "@/hooks/use-elapsed";
+import { cn } from "@/lib/utils";
 
 import {
   loginEmployee,
@@ -403,7 +404,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
           className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium ${
             running
               ? "bg-destructive text-destructive-foreground"
-              : "bg-accent text-accent-foreground"
+              : "bg-google-green text-google-green-foreground"
           }`}
         >
           {running ? "Logout" : "Login"}
@@ -435,7 +436,10 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
 
             <Button
               size="lg"
-              className="w-full"
+              className={cn(
+                "w-full",
+                !running && "bg-google-green text-google-green-foreground hover:bg-google-green/90"
+              )}
               variant={running ? "destructive" : "default"}
               disabled={busy || status.isLoading}
               onClick={async () => {
@@ -514,7 +518,10 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
           />
 
           <Button
-            className="w-full"
+            className={cn(
+              "w-full",
+              !openVisit && "hover:bg-primary hover:text-primary-foreground"
+            )}
             variant={openVisit ? "destructive" : "secondary"}
             disabled={busy}
             onClick={toggleVisit}
