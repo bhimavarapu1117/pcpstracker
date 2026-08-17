@@ -368,6 +368,27 @@ function AdminPage() {
               </StatusCard>
             </div>
 
+            <TabsList className="h-auto flex-wrap justify-start rounded-full bg-transparent p-0 gap-2">
+              <TabsTrigger
+                className="rounded-full bg-card px-5 py-2 shadow-sm data-[state=active]:bg-foreground data-[state=active]:text-background"
+                value="roster"
+              >
+                Attendance
+              </TabsTrigger>
+              <TabsTrigger
+                className="rounded-full bg-card px-5 py-2 shadow-sm data-[state=active]:bg-foreground data-[state=active]:text-background"
+                value="visits"
+              >
+                Site visits
+              </TabsTrigger>
+              <TabsTrigger
+                className="rounded-full bg-card px-5 py-2 shadow-sm data-[state=active]:bg-foreground data-[state=active]:text-background"
+                value="sites"
+              >
+                Sites
+              </TabsTrigger>
+            </TabsList>
+
             <div className="grid gap-4 lg:grid-cols-1">
               <TabsContent value="roster" className="mt-0">
                 <TableCard
