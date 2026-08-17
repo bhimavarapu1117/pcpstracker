@@ -28,7 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import popsLogo from "@/assets/pops-logo.png.asset.json";
 import { useElapsed, formatDuration, formatShort } from "@/hooks/use-elapsed";
+
 import {
   loginEmployee,
   listSites,
