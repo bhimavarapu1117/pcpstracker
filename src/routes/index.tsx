@@ -542,8 +542,18 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Building2 className="size-4" /> Site visit
+            <button
+              type="button"
+              onClick={handleRefreshSites}
+              disabled={refreshingSites}
+              className="ml-auto inline-flex items-center gap-1 rounded-full p-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+              aria-label="Refresh sites"
+            >
+              <RefreshCw className={cn("size-3.5", refreshingSites && "animate-spin")} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
             {openVisit ? (
-              <span className="ml-auto font-mono text-sm tabular-nums text-primary">
+              <span className="font-mono text-sm tabular-nums text-primary">
                 {formatDuration(visitSeconds)}
               </span>
             ) : null}
