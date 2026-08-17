@@ -270,14 +270,18 @@ function AdminPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <Card>
+    <Card className="relative rounded-3xl border-0 shadow-sm">
       <CardContent className="py-5">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="mt-1 text-2xl font-semibold">{value}</p>
+        <span className="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <ArrowUpRight className="size-3.5" />
+        </span>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p>
       </CardContent>
     </Card>
   );
 }
+
 
 function MapLink({ href }: { href: string }) {
   if (!href) return <span>-</span>;
