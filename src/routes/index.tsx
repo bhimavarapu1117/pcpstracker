@@ -267,7 +267,7 @@ function Clockface() {
   );
 }
 
-function Workspace({ session, onLogout }: { session: Session; onLogout: () => void }) {
+function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Session; onLogout: () => void; dayOpen: boolean; setDayOpen: (v: boolean) => void; }) {
   const sitesFn = useServerFn(listSites);
   const statusFn = useServerFn(getTodayStatus);
   const attendanceFn = useServerFn(recordAttendance);
@@ -279,7 +279,6 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
   const [busy, setBusy] = useState(false);
   const [siteId, setSiteId] = useState<string>("");
   const [notes, setNotes] = useState("");
-  const [dayOpen, setDayOpen] = useState(false);
 
 
   const sites = useQuery({ queryKey: ["sites"], queryFn: () => sitesFn({}) });
