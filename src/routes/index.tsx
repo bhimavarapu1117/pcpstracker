@@ -28,6 +28,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 import popsLogo from "@/assets/pops-logo.png.asset.json";
 import { useElapsed, formatDuration, formatShort } from "@/hooks/use-elapsed";
 
@@ -266,6 +273,8 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
   const [busy, setBusy] = useState(false);
   const [siteId, setSiteId] = useState<string>("");
   const [notes, setNotes] = useState("");
+  const [dayOpen, setDayOpen] = useState(false);
+
 
   const sites = useQuery({ queryKey: ["sites"], queryFn: () => sitesFn({}) });
   const status = useQuery({
@@ -364,64 +373,100 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{session.employeeId}</span>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="rounded-full border bg-card px-3 py-1 font-medium text-foreground"
-        >
-          Sign out
-        </button>
-      </div>
-
-      {/* Live clock */}
-      <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-sm">
-        <CardContent className="flex flex-col items-center gap-4 py-8">
-
-          <Clockface />
-          <p
-            className={`font-mono text-5xl font-semibold tabular-nums ${
-              running ? "text-primary" : "text-foreground"
-            }`}
-          >
+      {/* Compact status bar — tap to open day controls */}
+      <button
+        type="button"
+        onClick={() => setDayOpen(true)}
+        className="flex w-full items-center gap-3 rounded-full border-0 bg-card px-4 py-3 text-left shadow-sm"
+      >
+        <span
+          className={`size-2.5 shrink-0 rounded-full ${running ? "bg-primary animate-pulse" : "bg-muted-foreground/40"}`}
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block font-mono text-lg font-semibold tabular-nums leading-tight">
             {formatDuration(workSeconds)}
-          </p>
-          <Badge variant={running ? "default" : "secondary"} className="gap-1">
-            <Clock className="size-3.5" />
+          </span>
+          <span className="block truncate text-xs text-muted-foreground">
             {running
               ? `Working since ${hhmm(openShiftStart!)}`
               : completed > 0
                 ? `Done for today · ${formatShort(completed)}`
                 : "Not logged in"}
-          </Badge>
+          </span>
+        </span>
+        <span
+          className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium ${
+            running
+              ? "bg-destructive text-destructive-foreground"
+              : "bg-accent text-accent-foreground"
+          }`}
+        >
+          {running ? "Logout" : "Login"}
+        </span>
+      </button>
 
-          <Button
-            size="lg"
-            className="w-full max-w-xs"
-            variant={running ? "destructive" : "default"}
-            disabled={busy || status.isLoading}
-            onClick={toggleDay}
-          >
-            {running ? <Square className="size-4" /> : <Play className="size-4" />}
-            {busy ? "Saving…" : running ? "Logout" : "Login"}
-          </Button>
+      <Dialog open={dayOpen} onOpenChange={setDayOpen}>
+        <DialogContent className="rounded-3xl sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center text-base">{session.employeeId}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 pb-2">
+            <Clockface />
+            <p
+              className={`font-mono text-5xl font-semibold tabular-nums ${
+                running ? "text-primary" : "text-foreground"
+              }`}
+            >
+              {formatDuration(workSeconds)}
+            </p>
+            <Badge variant={running ? "default" : "secondary"} className="gap-1">
+              <Clock className="size-3.5" />
+              {running
+                ? `Working since ${hhmm(openShiftStart!)}`
+                : completed > 0
+                  ? `Done for today · ${formatShort(completed)}`
+                  : "Not logged in"}
+            </Badge>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <MapPin className="size-3.5 shrink-0" />
-            <span className="min-w-0 truncate">
-              {fix ? "Location ready" : (gpsError ?? "Getting your location…")}
-            </span>
+            <Button
+              size="lg"
+              className="w-full"
+              variant={running ? "destructive" : "default"}
+              disabled={busy || status.isLoading}
+              onClick={async () => {
+                await toggleDay();
+                setDayOpen(false);
+              }}
+            >
+              {running ? <Square className="size-4" /> : <Play className="size-4" />}
+              {busy ? "Saving…" : running ? "Logout" : "Login"}
+            </Button>
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <MapPin className="size-3.5 shrink-0" />
+              <span className="min-w-0 truncate">
+                {fix ? "Location ready" : (gpsError ?? "Getting your location…")}
+              </span>
+              <button
+                type="button"
+                className="inline-flex shrink-0 items-center gap-1 underline underline-offset-4"
+                onClick={() => refreshFix().catch(() => toast.error(gpsError ?? "GPS unavailable."))}
+              >
+                <RefreshCw className="size-3" /> Refresh
+              </button>
+            </div>
+
             <button
               type="button"
-              className="inline-flex shrink-0 items-center gap-1 underline underline-offset-4"
-              onClick={() => refreshFix().catch(() => toast.error(gpsError ?? "GPS unavailable."))}
+              onClick={onLogout}
+              className="text-xs font-medium text-muted-foreground underline underline-offset-4"
             >
-              <RefreshCw className="size-3" /> Refresh
+              Sign out of app
             </button>
           </div>
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Site visit */}
       <Card className="rounded-3xl border-0 shadow-sm">
