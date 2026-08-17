@@ -93,6 +93,24 @@ export async function appendRow(range: string, row: (string | number)[]) {
   invalidateReads();
 }
 
+export async function updateRange(range: string, values: (string | number)[][]) {
+  await gateway(`/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`, {
+    method: "PUT",
+    body: JSON.stringify({ values }),
+  });
+  invalidateReads();
+}
+
+/** Reads a range bypassing the cache (needed before updating an existing row). */
+export async function readRangeFresh(range: string): Promise<string[][]> {
+  const data = await gateway(`/spreadsheets/${SPREADSHEET_ID}/values/${range}`);
+  const value = (data.values as string[][]) ?? [];
+  readCache.set(range, { at: Date.now(), value });
+  return value;
+}
+
+
+
 
 
 /* ---------- helpers ---------- */
@@ -126,6 +144,48 @@ export function timeLabel(value: string) {
     timeZone: "Asia/Kolkata",
   });
 }
+
+/* ---------- IST date/time formatting (Attendance sheet) ---------- */
+
+const IST = "Asia/Kolkata";
+
+/** DD/MM/YYYY in IST */
+export function istDate(d = new Date()) {
+  const p = new Intl.DateTimeFormat("en-GB", {
+    timeZone: IST,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(d);
+  return p;
+}
+
+/** hh:mm:ss AM/PM in IST */
+export function istTime(d = new Date()) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: IST,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  }).format(d);
+}
+
+/** Turns "17/08/2026" + "09:47:41 PM" (IST) back into an ISO timestamp. */
+export function istToIso(date: string, time: string): string | null {
+  const d = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(date).trim());
+  const t = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i.exec(String(time).trim());
+  if (!d || !t) return null;
+  let hour = Number(t[1]);
+  const meridiem = t[4]?.toUpperCase();
+  if (meridiem === "PM" && hour !== 12) hour += 12;
+  if (meridiem === "AM" && hour === 12) hour = 0;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const iso = `${d[3]}-${d[2]}-${d[1]}T${pad(hour)}:${t[2]}:${t[3] ?? "00"}+05:30`;
+  const parsed = new Date(iso);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
 
 /* ---------- domain reads ---------- */
 
@@ -191,24 +251,90 @@ export type GeoPayload = {
   notes?: string | undefined;
 };
 
+/**
+ * Attendance sheet layout (one row per shift):
+ * A Employee ID | B Employee Name | C Login Status | D Login Time | E Login Date
+ * F Logout Status | G Logout Time | H Logout Date | I Google Maps | J Notes
+ */
+export const ATTENDANCE_RANGE = "Attendance!A2:J2000";
+
+export type Shift = {
+  employeeId: string;
+  employeeName: string;
+  loginIso: string | null;
+  logoutIso: string | null;
+  mapLink: string;
+  notes: string;
+};
+
+export function parseShifts(rows: string[][]): Shift[] {
+  return rows
+    .filter((r) => r[0])
+    .map((r) => ({
+      employeeId: String(r[0]).trim(),
+      employeeName: String(r[1] ?? ""),
+      loginIso: istToIso(String(r[4] ?? ""), String(r[3] ?? "")),
+      logoutIso: istToIso(String(r[7] ?? ""), String(r[6] ?? "")),
+      mapLink: String(r[8] ?? ""),
+      notes: String(r[9] ?? ""),
+    }));
+}
+
 export async function writeAttendance(data: GeoPayload & { action: string }) {
   const name = await getEmployeeName(data.employeeId);
   const now = new Date();
   const link = mapsLink(data.latitude, data.longitude);
-  await appendRow("Attendance!A:J", [
-    now.toISOString(),
-    isoDate(now),
-    data.employeeId,
-    name,
-    data.action,
-    data.latitude,
-    data.longitude,
-    data.accuracy,
-    link,
-    data.notes ?? "",
-  ]);
+
+  if (data.action === "CHECK_IN") {
+    await appendRow("Attendance!A:J", [
+      data.employeeId,
+      name,
+      "LOGGED IN",
+      istTime(now),
+      istDate(now),
+      "",
+      "",
+      "",
+      link,
+      data.notes ?? "",
+    ]);
+    return { success: true, mapLink: link, employeeName: name };
+  }
+
+  // CHECK_OUT: close the last open row for this employee.
+  const rows = await readRangeFresh(ATTENDANCE_RANGE);
+  let target = -1;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const r = rows[i] ?? [];
+    if (String(r[0] ?? "").trim() === data.employeeId && !String(r[5] ?? "").trim()) {
+      target = i;
+      break;
+    }
+  }
+
+  if (target === -1) {
+    await appendRow("Attendance!A:J", [
+      data.employeeId,
+      name,
+      "",
+      "",
+      "",
+      "LOGGED OUT",
+      istTime(now),
+      istDate(now),
+      link,
+      data.notes ?? "",
+    ]);
+  } else {
+    const sheetRow = target + 2; // data starts at row 2
+    await updateRange(`Attendance!F${sheetRow}:J${sheetRow}`, [
+      ["LOGGED OUT", istTime(now), istDate(now), link, data.notes ?? ""],
+    ]);
+  }
+
   return { success: true, mapLink: link, employeeName: name };
 }
+
 
 export async function writeSiteVisit(data: GeoPayload & { action: string; siteId: string }) {
   const [name, sites] = await Promise.all([getEmployeeName(data.employeeId), getSites()]);
@@ -278,19 +404,18 @@ export type DayEvent = {
 export async function readTodayForEmployee(employeeId: string) {
   const date = isoDate();
   const [attendanceRows, visitRows] = await Promise.all([
-    readRange("Attendance!A2:J2000"),
+    readRange(ATTENDANCE_RANGE),
     readRange("SiteVisits!A2:O2000"),
   ]);
 
-  const mine = attendanceRows
-    .filter((r) => r[1] === date && String(r[2]) === employeeId)
-    .map((r) => ({
-      timestamp: String(r[0]),
-      action: String(r[4]),
-      mapLink: String(r[8] ?? ""),
-      notes: String(r[9] ?? ""),
-    }))
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const mine = parseShifts(attendanceRows)
+    .filter(
+      (s) =>
+        s.employeeId === employeeId &&
+        ((s.loginIso && isoDate(new Date(s.loginIso)) === date) ||
+          (s.logoutIso && isoDate(new Date(s.logoutIso)) === date)),
+    )
+    .sort((a, b) => (a.loginIso ?? a.logoutIso ?? "").localeCompare(b.loginIso ?? b.logoutIso ?? ""));
 
   const myVisits = visitRows
     .filter((r) => r[1] === date && String(r[2]) === employeeId)
@@ -308,15 +433,14 @@ export async function readTodayForEmployee(employeeId: string) {
 
   let openShiftStart: string | null = null;
   let completedSeconds = 0;
-  for (const row of mine) {
-    if (row.action === "CHECK_IN") {
-      openShiftStart = row.timestamp;
-    } else if (row.action === "CHECK_OUT" && openShiftStart) {
+  for (const s of mine) {
+    if (s.loginIso && s.logoutIso) {
       completedSeconds += Math.max(
         0,
-        (new Date(row.timestamp).getTime() - new Date(openShiftStart).getTime()) / 1000,
+        (new Date(s.logoutIso).getTime() - new Date(s.loginIso).getTime()) / 1000,
       );
-      openShiftStart = null;
+    } else if (s.loginIso && !s.logoutIso) {
+      openShiftStart = s.loginIso;
     }
   }
 
@@ -330,13 +454,27 @@ export async function readTodayForEmployee(employeeId: string) {
   }
 
   const events: DayEvent[] = [
-    ...mine.map((r) => ({
-      timestamp: r.timestamp,
-      type: r.action as DayEvent["type"],
-      label: r.action === "CHECK_IN" ? "Logged in" : "Logged out",
-      mapLink: r.mapLink,
-      notes: r.notes,
-    })),
+    ...mine.flatMap((s) => {
+      const out: DayEvent[] = [];
+      if (s.loginIso)
+        out.push({
+          timestamp: s.loginIso,
+          type: "CHECK_IN",
+          label: "Logged in",
+          mapLink: s.mapLink,
+          notes: s.notes,
+        });
+      if (s.logoutIso)
+        out.push({
+          timestamp: s.logoutIso,
+          type: "CHECK_OUT",
+          label: "Logged out",
+          mapLink: s.mapLink,
+          notes: s.notes,
+        });
+      return out;
+    }),
+
     ...myVisits.map((v) => ({
       timestamp: v.timestamp,
       type: v.action as DayEvent["type"],
@@ -367,22 +505,31 @@ export async function buildAdminData(date: string) {
   const [employees, sites, attendanceRows, visitRows, locationRows] = await Promise.all([
     getEmployees(),
     getSites(),
-    readRange("Attendance!A2:J2000"),
+    readRange(ATTENDANCE_RANGE),
     readRange("SiteVisits!A2:O2000"),
     readRange("LocationLogs!A2:H2000"),
   ]);
 
-  const attendance = attendanceRows
-    .filter((r) => r[1] === date)
-    .map((r) => ({
-      timestamp: String(r[0]),
-      employeeId: String(r[2]),
-      employeeName: String(r[3]),
-      action: String(r[4]),
-      accuracy: Number(r[7]) || 0,
-      mapLink: String(r[8] ?? ""),
-      notes: String(r[9] ?? ""),
-    }));
+  const shifts = parseShifts(attendanceRows).filter(
+    (s) =>
+      (s.loginIso && isoDate(new Date(s.loginIso)) === date) ||
+      (s.logoutIso && isoDate(new Date(s.logoutIso)) === date),
+  );
+
+  const attendance = shifts.flatMap((s) => {
+    const base = {
+      employeeId: s.employeeId,
+      employeeName: s.employeeName,
+      accuracy: 0,
+      mapLink: s.mapLink,
+      notes: s.notes,
+    };
+    const out: (typeof base & { timestamp: string; action: string })[] = [];
+    if (s.loginIso) out.push({ ...base, timestamp: s.loginIso, action: "CHECK_IN" });
+    if (s.logoutIso) out.push({ ...base, timestamp: s.logoutIso, action: "CHECK_OUT" });
+    return out;
+  });
+
 
   const visits = visitRows
     .filter((r) => r[1] === date)
@@ -415,22 +562,24 @@ export async function buildAdminData(date: string) {
   const roster = employees
     .filter((e) => e.active)
     .map((e) => {
-      const own = attendance
-        .filter((a) => a.employeeId === e.employeeId)
-        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-      const checkIn = own.find((a) => a.action === "CHECK_IN");
-      const checkOut = [...own].reverse().find((a) => a.action === "CHECK_OUT");
+      const own = shifts
+        .filter((s) => s.employeeId === e.employeeId)
+        .sort((a, b) =>
+          (a.loginIso ?? a.logoutIso ?? "").localeCompare(b.loginIso ?? b.logoutIso ?? ""),
+        );
+      const firstIn = own.find((s) => s.loginIso)?.loginIso ?? null;
+      const lastOut = [...own].reverse().find((s) => s.logoutIso)?.logoutIso ?? null;
 
       let openSince: string | null = null;
       let completedSeconds = 0;
-      for (const row of own) {
-        if (row.action === "CHECK_IN") openSince = row.timestamp;
-        else if (row.action === "CHECK_OUT" && openSince) {
+      for (const s of own) {
+        if (s.loginIso && s.logoutIso) {
           completedSeconds += Math.max(
             0,
-            (new Date(row.timestamp).getTime() - new Date(openSince).getTime()) / 1000,
+            (new Date(s.logoutIso).getTime() - new Date(s.loginIso).getTime()) / 1000,
           );
-          openSince = null;
+        } else if (s.loginIso && !s.logoutIso) {
+          openSince = s.loginIso;
         }
       }
 
@@ -438,8 +587,9 @@ export async function buildAdminData(date: string) {
         employeeId: e.employeeId,
         name: e.name,
         phone: e.phone,
-        checkIn: checkIn ? timeLabel(checkIn.timestamp) : "",
-        checkOut: checkOut ? timeLabel(checkOut.timestamp) : "",
+        checkIn: firstIn ? timeLabel(firstIn) : "",
+        checkOut: lastOut ? timeLabel(lastOut) : "",
+
         openSince,
         completedSeconds: Math.round(completedSeconds),
         visits: visits.filter(
