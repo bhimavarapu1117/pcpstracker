@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowUpRight, ExternalLink, RefreshCw } from "lucide-react";
+import { ArrowUpRight, ExternalLink, LogOut, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -158,6 +158,16 @@ function AdminPage() {
                   <ExternalLink className="size-4" /> Google Sheet
                 </Button>
               </a>
+              <Button
+                variant="outline"
+                className="border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={() => {
+                  setData(null);
+                  setPasscode("");
+                }}
+              >
+                <LogOut className="size-4" /> Sign out
+              </Button>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
