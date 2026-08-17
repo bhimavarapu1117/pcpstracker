@@ -239,6 +239,46 @@ function AdminPage() {
               </CardContent>
             </Card>
 
+            <Card className="rounded-3xl border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Open site visits</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {openVisits.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No site visit is waiting for a check-out.
+                  </p>
+                ) : (
+                  openVisits.map((v) => (
+                    <div
+                      key={v.sheetRow}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {v.employeeName || v.employeeId} · {v.siteName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Checked in {v.inIso ? time(v.inIso) : "-"} · still open
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-full"
+                        disabled={closingRow === v.sheetRow}
+                        onClick={() => forceClose(v)}
+                      >
+                        {closingRow === v.sheetRow ? "Closing…" : "Force check-out"}
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+
+
             <Tabs defaultValue="roster">
               <TabsList className="rounded-full bg-card p-1 shadow-sm">
                 <TabsTrigger className="rounded-full px-4" value="roster">Attendance</TabsTrigger>
