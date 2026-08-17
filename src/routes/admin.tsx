@@ -311,167 +311,161 @@ function AdminPage() {
               <Stat label="Site visits" value={String(data.totals.visits)} />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <TabsContent value="roster" className="mt-0">
-                  <TableCard
-                    head={["Employee", "ID", "Login", "Logout", "Worked", "Visits", "Last seen"]}
-                    rows={data.roster.map((r) => [
-                      r.name,
-                      r.employeeId,
-                      r.checkIn || "-",
-                      r.checkOut || (r.openSince ? "Running" : "-"),
-                      <WorkedCell openSince={r.openSince} completedSeconds={r.completedSeconds} />,
-                      String(r.visits),
-                      r.lastSeen ? (
-                        <a
-                          className="underline underline-offset-4"
-                          href={r.lastSeen.mapLink}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {time(r.lastSeen.timestamp)} · ±{r.lastSeen.accuracy} m
-                        </a>
-                      ) : (
-                        "-"
-                      ),
-                    ])}
-                  />
-                </TabsContent>
-                <TabsContent value="visits" className="mt-0">
-                  <TableCard
-                    head={["Time", "Employee", "Site", "Action", "Distance", "Geofence", "Map"]}
-                    rows={data.visits.map((v) => [
-                      time(v.timestamp),
-                      v.employeeName,
-                      `${v.siteName} (${v.customer})`,
-                      v.action.replace("SITE_", "").replace("_", " "),
-                      `${v.distance} m`,
-                      <Badge
-                        variant={v.withinGeofence ? "default" : "destructive"}
-                        className={
-                          v.withinGeofence
-                            ? "bg-google-green text-google-green-foreground hover:bg-google-green/90"
-                            : ""
-                        }
+            <div className="grid gap-4 md:grid-cols-3">
+              <StatusCard title="Who’s in right now">
+                {data.roster.filter((r) => r.openSince).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nobody is logged in.</p>
+                ) : (
+                  data.roster
+                    .filter((r) => r.openSince)
+                    .map((r) => <LiveRow key={r.employeeId} row={r} />)
+                )}
+              </StatusCard>
+
+              <StatusCard title="Open site visits">
+                {openVisits.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No site visit is waiting for a check-out.
+                  </p>
+                ) : (
+                  openVisits.map((v) => (
+                    <div
+                      key={v.sheetRow}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {v.employeeName || v.employeeId} · {v.siteName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Checked in {v.inIso ? time(v.inIso) : "-"} · still open
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-full"
+                        disabled={closingRow === v.sheetRow}
+                        onClick={() => forceClose(v)}
                       >
-                        {v.withinGeofence ? "Inside" : "Outside"}
-                      </Badge>,
-                      <MapLink href={v.mapLink} />,
-                    ])}
-                  />
-                </TabsContent>
-                <TabsContent value="sites" className="mt-0">
-                  <TableCard
-                    head={["Site ID", "Site", "Customer", "Address", "Geofence"]}
-                    rows={data.sites.map((s) => [
-                      s.siteId,
-                      s.siteName,
-                      s.customer,
-                      s.address,
-                      `${s.radius} m`,
-                    ])}
-                  />
-                </TabsContent>
-              </div>
+                        {closingRow === v.sheetRow ? "Closing…" : "Force check-out"}
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </StatusCard>
 
-              <div className="space-y-4">
-                <Card className="rounded-3xl border-0 shadow-sm">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Who’s in right now</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {data.roster.filter((r) => r.openSince).length === 0 ? (
-                      <p className="text-sm text-muted-foreground">Nobody is logged in.</p>
-                    ) : (
-                      data.roster
-                        .filter((r) => r.openSince)
-                        .map((r) => <LiveRow key={r.employeeId} row={r} />)
-                    )}
-                  </CardContent>
-                </Card>
+              <StatusCard title="Open logins">
+                {openShifts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Nobody is waiting for a logout.
+                  </p>
+                ) : (
+                  openShifts.map((s) => (
+                    <div
+                      key={s.sheetRow}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {s.employeeName || s.employeeId}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Logged in {s.inIso ? time(s.inIso) : "-"} · still open
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-full"
+                        disabled={closingShiftRow === s.sheetRow}
+                        onClick={() => forceLogout(s)}
+                      >
+                        {closingShiftRow === s.sheetRow ? "Logging out…" : "Force logout"}
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </StatusCard>
+            </div>
 
-                <Card className="rounded-3xl border-0 shadow-sm">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Open site visits</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {openVisits.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        No site visit is waiting for a check-out.
-                      </p>
+            <div className="grid gap-4 lg:grid-cols-1">
+              <TabsContent value="roster" className="mt-0">
+                <TableCard
+                  head={["Employee", "ID", "Login", "Logout", "Worked", "Visits", "Last seen"]}
+                  rows={data.roster.map((r) => [
+                    r.name,
+                    r.employeeId,
+                    r.checkIn || "-",
+                    r.checkOut || (r.openSince ? "Running" : "-"),
+                    <WorkedCell openSince={r.openSince} completedSeconds={r.completedSeconds} />,
+                    String(r.visits),
+                    r.lastSeen ? (
+                      <a
+                        className="underline underline-offset-4"
+                        href={r.lastSeen.mapLink}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {time(r.lastSeen.timestamp)} · ±{r.lastSeen.accuracy} m
+                      </a>
                     ) : (
-                      openVisits.map((v) => (
-                        <div
-                          key={v.sheetRow}
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">
-                              {v.employeeName || v.employeeId} · {v.siteName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Checked in {v.inIso ? time(v.inIso) : "-"} · still open
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="rounded-full"
-                            disabled={closingRow === v.sheetRow}
-                            onClick={() => forceClose(v)}
-                          >
-                            {closingRow === v.sheetRow ? "Closing…" : "Force check-out"}
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-3xl border-0 shadow-sm">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Open logins</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {openShifts.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Nobody is waiting for a logout.
-                      </p>
-                    ) : (
-                      openShifts.map((s) => (
-                        <div
-                          key={s.sheetRow}
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">
-                              {s.employeeName || s.employeeId}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Logged in {s.inIso ? time(s.inIso) : "-"} · still open
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="rounded-full"
-                            disabled={closingShiftRow === s.sheetRow}
-                            onClick={() => forceLogout(s)}
-                          >
-                            {closingShiftRow === s.sheetRow ? "Logging out…" : "Force logout"}
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                      "-"
+                    ),
+                  ])}
+                />
+              </TabsContent>
+              <TabsContent value="visits" className="mt-0">
+                <TableCard
+                  head={["Time", "Employee", "Site", "Action", "Distance", "Geofence", "Map"]}
+                  rows={data.visits.map((v) => [
+                    time(v.timestamp),
+                    v.employeeName,
+                    `${v.siteName} (${v.customer})`,
+                    v.action.replace("SITE_", "").replace("_", " "),
+                    `${v.distance} m`,
+                    <Badge
+                      variant={v.withinGeofence ? "default" : "destructive"}
+                      className={
+                        v.withinGeofence
+                          ? "bg-google-green text-google-green-foreground hover:bg-google-green/90"
+                          : ""
+                      }
+                    >
+                      {v.withinGeofence ? "Inside" : "Outside"}
+                    </Badge>,
+                    <MapLink href={v.mapLink} />,
+                  ])}
+                />
+              </TabsContent>
+              <TabsContent value="sites" className="mt-0">
+                <TableCard
+                  head={["Site ID", "Site", "Customer", "Address", "Geofence"]}
+                  rows={data.sites.map((s) => [
+                    s.siteId,
+                    s.siteName,
+                    s.customer,
+                    s.address,
+                    `${s.radius} m`,
+                  ])}
+                />
+              </TabsContent>
             </div>
           </Tabs>
         )}
       </div>
     </main>
+  );
+}
+
+function StatusCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card className="rounded-3xl border-0 shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">{children}</CardContent>
+    </Card>
   );
 }
 
