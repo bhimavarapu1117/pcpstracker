@@ -11,6 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -27,6 +34,7 @@ import {
   forceCloseShiftAdmin,
 } from "@/lib/attendance.functions";
 import popsLogo from "@/assets/pops-logo-transparent.png";
+
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
