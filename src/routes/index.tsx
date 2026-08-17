@@ -117,37 +117,44 @@ function FieldApp() {
   };
 
   return (
-    <main className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4">
+    <main className="min-h-screen">
+      <div className="mx-auto max-w-2xl px-4 py-5">
+        <header className="flex items-center justify-between gap-3 rounded-full border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Satellite className="size-5" />
+            <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <Satellite className="size-4" />
             </span>
-            <div>
-              <h1 className="text-base font-semibold leading-tight">Field Attendance</h1>
-              <p className="text-xs text-muted-foreground">Pest control GPS tracking</p>
-            </div>
+            <span className="text-sm font-semibold tracking-tight">fieldtrack</span>
           </div>
           <Link
             to="/admin"
-            className="text-xs font-medium text-muted-foreground underline-offset-4 hover:underline"
+            className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background"
           >
             Admin
           </Link>
-        </div>
-      </header>
+        </header>
 
-      <div className="mx-auto max-w-2xl px-4 py-6">
-        {!ready ? null : session ? (
-          <Workspace session={session} onLogout={signOut} />
-        ) : (
-          <LoginCard onLogin={signIn} />
-        )}
+        {session ? (
+          <div className="mt-6">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Hi, <span className="text-primary">{session.name}</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">Here’s your day on the field.</p>
+          </div>
+        ) : null}
+
+        <div className="py-5">
+          {!ready ? null : session ? (
+            <Workspace session={session} onLogout={signOut} />
+          ) : (
+            <LoginCard onLogin={signIn} />
+          )}
+        </div>
       </div>
     </main>
   );
 }
+
 
 function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
   const login = useServerFn(loginEmployee);
