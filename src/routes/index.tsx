@@ -239,7 +239,7 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
         >
           Admin
         </Link>
-        <p className="text-center text-xs text-muted-foreground">Demo login: EMP001 / 1234</p>
+        
       </form>
     </div>
   );
