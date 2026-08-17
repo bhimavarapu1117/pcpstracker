@@ -403,29 +403,14 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
             {busy ? "Saving…" : running ? "Logout" : "Login"}
           </Button>
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <MapPin className="size-3.5" />
-            {fix ? (
-              <>
-                <span className="font-mono">
-                  {fix.latitude.toFixed(5)}, {fix.longitude.toFixed(5)}
-                </span>
-                <span>±{fix.accuracy} m</span>
-                <a
-                  className="underline underline-offset-4"
-                  href={`https://www.google.com/maps?q=${fix.latitude},${fix.longitude}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Map
-                </a>
-              </>
-            ) : (
-              <span>{gpsError ?? "Getting your location…"}</span>
-            )}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <MapPin className="size-3.5 shrink-0" />
+            <span className="min-w-0 truncate">
+              {fix ? "Location ready" : (gpsError ?? "Getting your location…")}
+            </span>
             <button
               type="button"
-              className="inline-flex items-center gap-1 underline underline-offset-4"
+              className="inline-flex shrink-0 items-center gap-1 underline underline-offset-4"
               onClick={() => refreshFix().catch(() => toast.error(gpsError ?? "GPS unavailable."))}
             >
               <RefreshCw className="size-3" /> Refresh
