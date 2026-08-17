@@ -136,7 +136,7 @@ export type GeoPayload = {
   latitude: number;
   longitude: number;
   accuracy: number;
-  notes?: string;
+  notes?: string | undefined;
 };
 
 export async function writeAttendance(data: GeoPayload & { action: string }) {
