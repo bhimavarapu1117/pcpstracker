@@ -562,22 +562,24 @@ export async function buildAdminData(date: string) {
   const roster = employees
     .filter((e) => e.active)
     .map((e) => {
-      const own = attendance
-        .filter((a) => a.employeeId === e.employeeId)
-        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-      const checkIn = own.find((a) => a.action === "CHECK_IN");
-      const checkOut = [...own].reverse().find((a) => a.action === "CHECK_OUT");
+      const own = shifts
+        .filter((s) => s.employeeId === e.employeeId)
+        .sort((a, b) =>
+          (a.loginIso ?? a.logoutIso ?? "").localeCompare(b.loginIso ?? b.logoutIso ?? ""),
+        );
+      const firstIn = own.find((s) => s.loginIso)?.loginIso ?? null;
+      const lastOut = [...own].reverse().find((s) => s.logoutIso)?.logoutIso ?? null;
 
       let openSince: string | null = null;
       let completedSeconds = 0;
-      for (const row of own) {
-        if (row.action === "CHECK_IN") openSince = row.timestamp;
-        else if (row.action === "CHECK_OUT" && openSince) {
+      for (const s of own) {
+        if (s.loginIso && s.logoutIso) {
           completedSeconds += Math.max(
             0,
-            (new Date(row.timestamp).getTime() - new Date(openSince).getTime()) / 1000,
+            (new Date(s.logoutIso).getTime() - new Date(s.loginIso).getTime()) / 1000,
           );
-          openSince = null;
+        } else if (s.loginIso && !s.logoutIso) {
+          openSince = s.loginIso;
         }
       }
 
@@ -585,8 +587,9 @@ export async function buildAdminData(date: string) {
         employeeId: e.employeeId,
         name: e.name,
         phone: e.phone,
-        checkIn: checkIn ? timeLabel(checkIn.timestamp) : "",
-        checkOut: checkOut ? timeLabel(checkOut.timestamp) : "",
+        checkIn: firstIn ? timeLabel(firstIn) : "",
+        checkOut: lastOut ? timeLabel(lastOut) : "",
+
         openSince,
         completedSeconds: Math.round(completedSeconds),
         visits: visits.filter(
