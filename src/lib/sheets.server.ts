@@ -780,3 +780,47 @@ export function renderDailyReportHtml(data: AdminData) {
     <p><a href="${data.spreadsheetUrl}">Open the Google Sheet</a> for full GPS history and Maps links.</p>
   </div>`;
 }
+
+/* ---------- admin override: force-close an open site visit ---------- */
+
+export async function listOpenVisits() {
+  const rows = await readRangeFresh(SITEVISITS_RANGE);
+  return rows
+    .map((r, i) => ({ r: r ?? [], sheetRow: i + 2 }))
+    .filter(
+      ({ r }) => String(r[0] ?? "").trim() && String(r[4] ?? "").trim() && !String(r[7] ?? "").trim(),
+    )
+    .map(({ r, sheetRow }) => ({
+      sheetRow,
+      employeeId: String(r[0]).trim(),
+      employeeName: String(r[1] ?? ""),
+      siteId: String(r[2] ?? ""),
+      siteName: String(r[3] ?? ""),
+      inIso: istToIso(String(r[6] ?? ""), String(r[5] ?? "")),
+      mapLink: String(r[12] ?? ""),
+      notes: String(r[13] ?? ""),
+    }));
+}
+
+export async function forceCloseVisit(input: { sheetRow: number; notes?: string }) {
+  const rows = await readRangeFresh(SITEVISITS_RANGE);
+  const row = rows[input.sheetRow - 2];
+  if (!row || !String(row[0] ?? "").trim()) throw new Error("Visit row not found.");
+  if (String(row[7] ?? "").trim()) throw new Error("This visit is already checked out.");
+
+  const now = new Date();
+  const existingNotes = String(row[13] ?? "").trim();
+  const adminNote = (input.notes ?? "").trim() || "Force-closed by admin";
+  await updateRange(`SiteVisits!H${input.sheetRow}:J${input.sheetRow}`, [
+    ["CHECKED OUT (ADMIN)", istTime(now), istDate(now)],
+  ]);
+  await updateRange(`SiteVisits!N${input.sheetRow}:N${input.sheetRow}`, [
+    [existingNotes ? `${existingNotes} | ${adminNote}` : adminNote],
+  ]);
+
+  return {
+    success: true as const,
+    employeeId: String(row[0]).trim(),
+    siteName: String(row[3] ?? ""),
+  };
+}
