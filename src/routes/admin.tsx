@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { useElapsed, formatDuration } from "@/hooks/use-elapsed";
 import { getAdminData } from "@/lib/attendance.functions";
+import popsLogo from "@/assets/pops-logo-transparent.png";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
