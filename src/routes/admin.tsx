@@ -458,6 +458,17 @@ function AdminPage() {
   );
 }
 
+function StatusCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card className="rounded-3xl border-0 shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">{children}</CardContent>
+    </Card>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <Card className="relative rounded-3xl border-0 shadow-sm">
