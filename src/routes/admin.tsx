@@ -74,28 +74,32 @@ function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+    <main className="min-h-screen">
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-5">
+        <header className="flex flex-wrap items-center justify-between gap-3 rounded-full border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <LayoutDashboard className="size-5" />
+            <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <LayoutDashboard className="size-4" />
             </span>
-            <div>
-              <h1 className="text-base font-semibold leading-tight">Admin dashboard</h1>
-              <p className="text-xs text-muted-foreground">Attendance, site visits & GPS history</p>
-            </div>
+            <span className="text-sm font-semibold tracking-tight">fieldtrack</span>
           </div>
-          <Link
-            to="/"
-            className="text-xs font-medium text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Employee app
-          </Link>
-        </div>
-      </header>
+          <nav className="flex items-center gap-1 text-xs font-medium">
+            <span className="rounded-full bg-foreground px-4 py-1.5 text-background">Dashboard</span>
+            <Link to="/" className="rounded-full px-4 py-1.5 text-muted-foreground hover:bg-muted">
+              Employee app
+            </Link>
+          </nav>
+        </header>
 
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Good day, <span className="text-primary">Admin</span>
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Here’s what’s happening with your field crew today.
+          </p>
+        </div>
+
         {!data ? (
           <Card className="mx-auto max-w-md">
             <CardHeader>
