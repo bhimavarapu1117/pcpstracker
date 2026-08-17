@@ -188,17 +188,35 @@ export function istTime(d = new Date()) {
 /** Turns "17/08/2026" + "09:47:41 PM" (IST) back into an ISO timestamp. */
 export function istToIso(date: string, time: string): string | null {
   const d = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(date).trim());
-  const t = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i.exec(String(time).trim());
-  if (!d || !t) return null;
-  let hour = Number(t[1]);
-  const meridiem = t[4]?.toUpperCase();
-  if (meridiem === "PM" && hour !== 12) hour += 12;
-  if (meridiem === "AM" && hour === 12) hour = 0;
+  if (!d) return null;
+  const raw = String(time).trim();
   const pad = (n: number) => String(n).padStart(2, "0");
-  const iso = `${d[3]}-${d[2]}-${d[1]}T${pad(hour)}:${t[2]}:${t[3] ?? "00"}+05:30`;
+
+  let hh: string, mm: string, ss: string;
+  const t = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i.exec(raw);
+  if (t) {
+    let hour = Number(t[1]);
+    const meridiem = t[4]?.toUpperCase();
+    if (meridiem === "PM" && hour !== 12) hour += 12;
+    if (meridiem === "AM" && hour === 12) hour = 0;
+    hh = pad(hour);
+    mm = t[2]!;
+    ss = t[3] ?? "00";
+  } else if (/^\d*\.?\d+$/.test(raw)) {
+    // Sheets stored the time as a day fraction (serial number).
+    const total = Math.round(Number(raw) * 86400);
+    hh = pad(Math.floor(total / 3600) % 24);
+    mm = pad(Math.floor(total / 60) % 60);
+    ss = pad(total % 60);
+  } else {
+    return null;
+  }
+
+  const iso = `${d[3]}-${d[2]}-${d[1]}T${hh}:${mm}:${ss}+05:30`;
   const parsed = new Date(iso);
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
+
 
 
 /* ---------- domain reads ---------- */
