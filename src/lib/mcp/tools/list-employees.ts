@@ -11,7 +11,7 @@ export default defineTool({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const { getEmployees } = await import("../../sheets.server");
-    const employees = (await getEmployees()).map((e) => ({ id: e.id, name: e.name }));
+    const employees = (await getEmployees()).map((e) => ({ id: e.employeeId, name: e.name }));
     return {
       content: [{ type: "text", text: JSON.stringify(employees, null, 2) }],
       structuredContent: { employees },

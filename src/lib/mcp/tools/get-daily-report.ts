@@ -18,7 +18,7 @@ export default defineTool({
     const day = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : isoDate();
     const data = await buildAdminData(day);
     return {
-      content: [{ type: "text", text: JSON.stringify({ date: day, ...data }, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify({ ...data, date: day }, null, 2) }],
       structuredContent: { date: day, report: data },
     };
   },

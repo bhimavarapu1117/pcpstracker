@@ -1,4 +1,5 @@
 import { auth, defineMcp } from "@lovable.dev/mcp-js";
+import type { AnyToolDefinition } from "@lovable.dev/mcp-js";
 import listEmployees from "./tools/list-employees";
 import listSites from "./tools/list-sites";
 import getDailyReport from "./tools/get-daily-report";
@@ -16,5 +17,5 @@ export default defineMcp({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
   }),
-  tools: [listEmployees, listSites, getDailyReport, listOpenSessions],
+  tools: [listEmployees, listSites, getDailyReport, listOpenSessions] as unknown as AnyToolDefinition[],
 });
