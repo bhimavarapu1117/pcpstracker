@@ -323,15 +323,51 @@ function AdminPage() {
               </CardContent>
             </Card>
 
-
+            <Card className="rounded-3xl border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Open logins</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {openShifts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Nobody is waiting for a logout.
+                  </p>
+                ) : (
+                  openShifts.map((s) => (
+                    <div
+                      key={s.sheetRow}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {s.employeeName || s.employeeId}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Logged in {s.inIso ? time(s.inIso) : "-"} · still open
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-full"
+                        disabled={closingShiftRow === s.sheetRow}
+                        onClick={() => forceLogout(s)}
+                      >
+                        {closingShiftRow === s.sheetRow ? "Logging out…" : "Force logout"}
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
 
             <Tabs defaultValue="roster">
               <TabsList className="rounded-full bg-card p-1 shadow-sm">
                 <TabsTrigger className="rounded-full px-4" value="roster">Attendance</TabsTrigger>
                 <TabsTrigger className="rounded-full px-4" value="visits">Site visits</TabsTrigger>
-                <TabsTrigger className="rounded-full px-4" value="history">Location history</TabsTrigger>
                 <TabsTrigger className="rounded-full px-4" value="sites">Sites</TabsTrigger>
               </TabsList>
+
 
               <TabsContent value="roster">
                 <TableCard
