@@ -4,9 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import {
   MapPin,
-  Play,
-  Square,
-  Satellite,
   
   Building2,
   Clock,
