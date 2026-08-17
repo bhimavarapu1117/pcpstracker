@@ -336,6 +336,45 @@ export async function writeAttendance(data: GeoPayload & { action: string }) {
 }
 
 
+/**
+ * SiteVisits sheet layout (one row per visit):
+ * A Employee ID | B Employee Name | C Site ID | D Site Name
+ * E Check-in Status | F Check-in Time | G Check-in Date
+ * H Check-out Status | I Check-out Time | J Check-out Date
+ * K Distance From Site (m) | L Within Geofence | M Google Maps | N Notes
+ */
+export const SITEVISITS_RANGE = "SiteVisits!A2:N2000";
+
+export type Visit = {
+  employeeId: string;
+  employeeName: string;
+  siteId: string;
+  siteName: string;
+  inIso: string | null;
+  outIso: string | null;
+  distance: number;
+  withinGeofence: boolean;
+  mapLink: string;
+  notes: string;
+};
+
+export function parseVisits(rows: string[][]): Visit[] {
+  return rows
+    .filter((r) => r[0])
+    .map((r) => ({
+      employeeId: String(r[0]).trim(),
+      employeeName: String(r[1] ?? ""),
+      siteId: String(r[2] ?? ""),
+      siteName: String(r[3] ?? ""),
+      inIso: istToIso(String(r[6] ?? ""), String(r[5] ?? "")),
+      outIso: istToIso(String(r[9] ?? ""), String(r[8] ?? "")),
+      distance: Number(r[10]) || 0,
+      withinGeofence: String(r[11] ?? "").toUpperCase() === "YES",
+      mapLink: String(r[12] ?? ""),
+      notes: String(r[13] ?? ""),
+    }));
+}
+
 export async function writeSiteVisit(data: GeoPayload & { action: string; siteId: string }) {
   const [name, sites] = await Promise.all([getEmployeeName(data.employeeId), getSites()]);
   const site = sites.find((s) => s.siteId === String(data.siteId));
@@ -346,23 +385,71 @@ export async function writeSiteVisit(data: GeoPayload & { action: string; siteId
   const now = new Date();
   const link = mapsLink(data.latitude, data.longitude);
 
-  await appendRow("SiteVisits!A:O", [
-    now.toISOString(),
-    isoDate(now),
-    data.employeeId,
-    name,
-    site.siteId,
-    site.siteName,
-    site.customer,
-    data.action,
-    data.latitude,
-    data.longitude,
-    data.accuracy,
-    Math.round(distance),
-    withinGeofence ? "YES" : "NO",
-    link,
-    data.notes ?? "",
-  ]);
+  if (data.action === "SITE_CHECK_IN") {
+    await appendRow("SiteVisits!A:N", [
+      data.employeeId,
+      name,
+      site.siteId,
+      site.siteName,
+      "CHECKED IN",
+      istTime(now),
+      istDate(now),
+      "",
+      "",
+      "",
+      Math.round(distance),
+      withinGeofence ? "YES" : "NO",
+      link,
+      data.notes ?? "",
+    ]);
+  } else {
+    // SITE_CHECK_OUT: close the last open visit row for this employee + site.
+    const rows = await readRangeFresh(SITEVISITS_RANGE);
+    let target = -1;
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const r = rows[i] ?? [];
+      if (
+        String(r[0] ?? "").trim() === data.employeeId &&
+        String(r[2] ?? "").trim() === String(site.siteId) &&
+        !String(r[7] ?? "").trim()
+      ) {
+        target = i;
+        break;
+      }
+    }
+
+    if (target === -1) {
+      await appendRow("SiteVisits!A:N", [
+        data.employeeId,
+        name,
+        site.siteId,
+        site.siteName,
+        "",
+        "",
+        "",
+        "CHECKED OUT",
+        istTime(now),
+        istDate(now),
+        Math.round(distance),
+        withinGeofence ? "YES" : "NO",
+        link,
+        data.notes ?? "",
+      ]);
+    } else {
+      const sheetRow = target + 2;
+      await updateRange(`SiteVisits!H${sheetRow}:N${sheetRow}`, [
+        [
+          "CHECKED OUT",
+          istTime(now),
+          istDate(now),
+          Math.round(distance),
+          withinGeofence ? "YES" : "NO",
+          link,
+          data.notes ?? "",
+        ],
+      ]);
+    }
+  }
 
   return {
     success: true,
