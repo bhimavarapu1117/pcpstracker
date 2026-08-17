@@ -280,6 +280,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const [busy, setBusy] = useState(false);
   const [siteId, setSiteId] = useState<string>("");
   const [notes, setNotes] = useState("");
+  const [frozenWorkSeconds, setFrozenWorkSeconds] = useState<number | null>(null);
 
 
   const sites = useQuery({ queryKey: ["sites"], queryFn: () => sitesFn({}) });
@@ -294,6 +295,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const completed = status.data?.completedSeconds ?? 0;
 
   const workSeconds = useElapsed(openShiftStart, completed);
+  const displayedWorkSeconds = frozenWorkSeconds ?? workSeconds;
   const visitSeconds = useElapsed(openVisit?.startedAt ?? null, 0);
 
   useEffect(() => {
@@ -323,7 +325,9 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
       const current = await refreshFix();
       await run(current);
       await status.refetch();
+      setFrozenWorkSeconds(null);
     } catch (err) {
+      setFrozenWorkSeconds(null);
       toast.error(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setBusy(false);
@@ -333,6 +337,11 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const toggleDay = () =>
     withFix(async (f) => {
       const action = openShiftStart ? "CHECK_OUT" : "CHECK_IN";
+      if (action === "CHECK_OUT") {
+        setFrozenWorkSeconds(workSeconds);
+      } else {
+        setFrozenWorkSeconds(null);
+      }
       await attendanceFn({
         data: {
           employeeId: session.employeeId,
@@ -390,7 +399,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
         />
         <span className="min-w-0 flex-1">
           <span className="block font-mono text-lg font-semibold tabular-nums leading-tight">
-            {formatDuration(workSeconds)}
+            {formatDuration(displayedWorkSeconds)}
           </span>
           <span className="block truncate text-xs text-muted-foreground">
             {running
@@ -423,7 +432,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
                 running ? "text-primary" : "text-foreground"
               }`}
             >
-              {formatDuration(workSeconds)}
+            {formatDuration(displayedWorkSeconds)}
             </p>
             <Badge variant={running ? "default" : "secondary"} className="gap-1">
               <Clock className="size-3.5" />
