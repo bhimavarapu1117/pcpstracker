@@ -93,6 +93,24 @@ export async function appendRow(range: string, row: (string | number)[]) {
   invalidateReads();
 }
 
+export async function updateRange(range: string, values: (string | number)[][]) {
+  await gateway(`/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`, {
+    method: "PUT",
+    body: JSON.stringify({ values }),
+  });
+  invalidateReads();
+}
+
+/** Reads a range bypassing the cache (needed before updating an existing row). */
+export async function readRangeFresh(range: string): Promise<string[][]> {
+  const data = await gateway(`/spreadsheets/${SPREADSHEET_ID}/values/${range}`);
+  const value = (data.values as string[][]) ?? [];
+  readCache.set(range, { at: Date.now(), value });
+  return value;
+}
+
+
+
 
 
 /* ---------- helpers ---------- */
