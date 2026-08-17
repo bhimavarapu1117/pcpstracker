@@ -338,7 +338,19 @@ export async function writeAttendance(data: GeoPayload & { action: string }) {
   const link = mapsLink(data.latitude, data.longitude);
 
   if (data.action === "CHECK_IN") {
+    // Don't open a second shift while one is still running.
+    const existing = await readRangeFresh(ATTENDANCE_RANGE);
+    const alreadyOpen = existing.some(
+      (r) =>
+        String(r[0] ?? "").trim() === data.employeeId &&
+        String(r[2] ?? "").trim() &&
+        !String(r[5] ?? "").trim(),
+    );
+    if (alreadyOpen) {
+      return { success: true, mapLink: link, employeeName: name };
+    }
     await appendRow("Attendance!A:M", [
+
       data.employeeId,
       name,
       "LOGGED IN",
