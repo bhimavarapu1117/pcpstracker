@@ -346,11 +346,9 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
       });
       setNotes("");
       if (res.withinGeofence) {
-        toast.success(`${res.siteName}: recorded (${res.distance} m from site)`);
+        toast.success(`${res.siteName}: recorded`);
       } else {
-        toast.warning(
-          `Outside geofence — ${res.distance} m from ${res.siteName}. Logged for review.`,
-        );
+        toast.warning(`You appear to be away from ${res.siteName}. Logged for review.`);
       }
     });
   };
