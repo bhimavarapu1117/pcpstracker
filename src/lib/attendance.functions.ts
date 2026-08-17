@@ -19,9 +19,9 @@ export const loginEmployee = createServerFn({ method: "POST" })
     const match = employees.find(
       (e) =>
         e.employeeId.toLowerCase() === data.employeeId.trim().toLowerCase() &&
-        e.pin === data.pin.trim() &&
-        e.active,
+        e.pin === data.pin.trim(),
     );
+
     if (!match) return { success: false as const, message: "Invalid Employee ID or PIN." };
     return { success: true as const, employeeId: match.employeeId, name: match.name };
   });

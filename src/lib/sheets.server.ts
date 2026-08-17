@@ -708,13 +708,13 @@ export type AdminData = Awaited<ReturnType<typeof buildAdminData>>;
 
 
 export async function buildAdminData(date: string) {
-  const [employees, sites, attendanceRows, visitRows, locationRows] = await Promise.all([
+  const [employees, sites, attendanceRows, visitRows] = await Promise.all([
     getEmployees(),
     getSites(),
     readRange(ATTENDANCE_RANGE),
     readRange(SITEVISITS_RANGE),
-    readRange("LocationLogs!A2:H2000"),
   ]);
+
 
   const shifts = parseShifts(attendanceRows).filter(
     (s) =>
@@ -760,18 +760,16 @@ export async function buildAdminData(date: string) {
       return out;
     });
 
-  const locations = locationRows
-    .filter((r) => r[1] === date)
-    .map((r) => ({
-      timestamp: String(r[0]),
-      employeeId: String(r[2]),
-      employeeName: String(r[3]),
-      latitude: Number(r[4]),
-      longitude: Number(r[5]),
-      accuracy: Number(r[6]) || 0,
-      mapLink: String(r[7] ?? ""),
-    }))
-    .reverse();
+  const locations: {
+    timestamp: string;
+    employeeId: string;
+    employeeName: string;
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+    mapLink: string;
+  }[] = [];
+
 
   const roster = employees
     .filter((e) => e.active)
