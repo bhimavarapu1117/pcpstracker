@@ -19,7 +19,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useElapsed, formatDuration } from "@/hooks/use-elapsed";
-import { getAdminData } from "@/lib/attendance.functions";
+import {
+  getAdminData,
+  listOpenVisitsAdmin,
+  forceCloseVisitAdmin,
+} from "@/lib/attendance.functions";
 import popsLogo from "@/assets/pops-logo-transparent.png";
 
 export const Route = createFileRoute("/admin")({
@@ -53,12 +57,52 @@ const time = (iso: string) => {
     : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
 };
 
+type OpenVisit = {
+  sheetRow: number;
+  employeeId: string;
+  employeeName: string;
+  siteName: string;
+  inIso: string | null;
+};
+
 function AdminPage() {
   const fetchAdmin = useServerFn(getAdminData);
+  const fetchOpenVisits = useServerFn(listOpenVisitsAdmin);
+  const closeVisit = useServerFn(forceCloseVisitAdmin);
   const [passcode, setPasscode] = useState("");
   const [date, setDate] = useState(today());
   const [data, setData] = useState<Admin | null>(null);
+  const [openVisits, setOpenVisits] = useState<OpenVisit[]>([]);
+  const [closingRow, setClosingRow] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+
+  async function loadOpenVisits(code = passcode) {
+    try {
+      const res = await fetchOpenVisits({ data: { passcode: code } });
+      if (res.success) setOpenVisits(res.visits);
+    } catch {
+      /* non-critical */
+    }
+  }
+
+  async function forceClose(v: OpenVisit) {
+    setClosingRow(v.sheetRow);
+    try {
+      const res = await closeVisit({
+        data: { passcode, sheetRow: v.sheetRow, notes: "Force-closed by admin" },
+      });
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      toast.success(`Closed ${v.employeeName}'s visit at ${v.siteName}`);
+      await Promise.all([load(), loadOpenVisits()]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not close the visit.");
+    } finally {
+      setClosingRow(null);
+    }
+  }
 
   async function load(code = passcode, day = date) {
     setBusy(true);
@@ -69,12 +113,14 @@ function AdminPage() {
         return;
       }
       setData(res.data);
+      await loadOpenVisits(code);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load dashboard.");
     } finally {
       setBusy(false);
     }
   }
+
 
   return (
     <main className={!data ? "flex min-h-screen items-center justify-center" : "min-h-screen"}>
@@ -192,6 +238,46 @@ function AdminPage() {
                 )}
               </CardContent>
             </Card>
+
+            <Card className="rounded-3xl border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Open site visits</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {openVisits.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No site visit is waiting for a check-out.
+                  </p>
+                ) : (
+                  openVisits.map((v) => (
+                    <div
+                      key={v.sheetRow}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {v.employeeName || v.employeeId} · {v.siteName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Checked in {v.inIso ? time(v.inIso) : "-"} · still open
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-full"
+                        disabled={closingRow === v.sheetRow}
+                        onClick={() => forceClose(v)}
+                      >
+                        {closingRow === v.sheetRow ? "Closing…" : "Force check-out"}
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+
 
             <Tabs defaultValue="roster">
               <TabsList className="rounded-full bg-card p-1 shadow-sm">
