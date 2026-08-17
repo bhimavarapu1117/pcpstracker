@@ -543,7 +543,7 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
       {/* Today's timeline */}
       <Card className="rounded-3xl border-0 shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Today’s activity</CardTitle>
+          <CardTitle className="text-base">Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
           {status.isLoading ? (
