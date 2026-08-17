@@ -33,9 +33,10 @@ async function gateway(path: string, init?: RequestInit) {
     });
     if (res.ok) return res.json();
     const body = await res.text();
-    if (res.status === 429 && attempt < 3) {
+    if (res.status === 429 && attempt < 5) {
       const retryAfter = Number(res.headers.get("retry-after"));
-      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1200 * 2 ** attempt;
+      const waitMs =
+        Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1000 * 2 ** attempt;
       attempt += 1;
       await new Promise((r) => setTimeout(r, waitMs));
       continue;
@@ -45,26 +46,43 @@ async function gateway(path: string, init?: RequestInit) {
   }
 }
 
-/* ---------- short-lived read cache (quota protection) ---------- */
+/* ---------- read cache (quota protection) ---------- */
 
-const READ_TTL_MS = 15_000;
-const readCache = new Map<string, { at: number; value: Promise<string[][]> }>();
+const READ_TTL_MS = 45_000;
+type Entry = { at: number; inflight?: Promise<string[][]>; value?: string[][] };
+const readCache = new Map<string, Entry>();
 
 function invalidateReads() {
-  readCache.clear();
+  // Keep last values as stale fallback, but force a refetch.
+  for (const entry of readCache.values()) entry.at = 0;
 }
 
 export async function readRange(range: string): Promise<string[][]> {
-  const cached = readCache.get(range);
-  if (cached && Date.now() - cached.at < READ_TTL_MS) return cached.value;
-  const value = gateway(`/spreadsheets/${SPREADSHEET_ID}/values/${range}`)
-    .then((data) => ((data.values as string[][]) ?? []))
+  const entry = readCache.get(range);
+  if (entry) {
+    if (entry.inflight) return entry.inflight;
+    if (entry.value && Date.now() - entry.at < READ_TTL_MS) return entry.value;
+  }
+
+  const inflight = gateway(`/spreadsheets/${SPREADSHEET_ID}/values/${range}`)
+    .then((data) => {
+      const value = (data.values as string[][]) ?? [];
+      readCache.set(range, { at: Date.now(), value });
+      return value;
+    })
     .catch((err) => {
+      // Serve stale data rather than blanking the app on a quota error.
+      const stale = readCache.get(range)?.value;
+      if (stale) {
+        readCache.set(range, { at: Date.now() - READ_TTL_MS + 5_000, value: stale });
+        return stale;
+      }
       readCache.delete(range);
       throw err;
     });
-  readCache.set(range, { at: Date.now(), value });
-  return value;
+
+  readCache.set(range, { ...(entry ?? {}), at: entry?.at ?? 0, inflight });
+  return inflight;
 }
 
 export async function appendRow(range: string, row: (string | number)[]) {
@@ -74,6 +92,7 @@ export async function appendRow(range: string, row: (string | number)[]) {
   );
   invalidateReads();
 }
+
 
 
 /* ---------- helpers ---------- */
