@@ -77,10 +77,10 @@ function AdminPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-6xl px-4 py-5">
+    <main className={!data ? "flex min-h-screen items-center justify-center" : "min-h-screen"}>
+      <div className={!data ? "w-full max-w-md px-4 py-5" : "mx-auto max-w-6xl space-y-6 px-4 py-5"}>
         {!data ? (
-          <Card className="mx-auto max-w-md rounded-3xl border-0 bg-card/85 shadow-lg backdrop-blur">
+          <Card className="rounded-3xl border-0 bg-card/85 shadow-lg backdrop-blur">
             <CardHeader className="items-center pb-2">
               <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-16 w-auto" />
               <CardTitle className="sr-only">Admin access</CardTitle>
@@ -125,6 +125,15 @@ function AdminPage() {
           </Card>
         ) : (
           <>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                Good day, <span className="text-primary">Admin</span>
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Here’s what’s happening with your field crew today.
+              </p>
+            </div>
+
             <div className="flex flex-wrap items-end gap-3">
               <div className="space-y-1">
                 <Label htmlFor="date" className="text-xs">
