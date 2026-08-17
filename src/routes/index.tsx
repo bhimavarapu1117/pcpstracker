@@ -35,7 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import popsLogo from "@/assets/pops-logo.png.asset.json";
+import popsLogo from "@/assets/pops-logo-transparent.png";
 import { useElapsed, formatDuration, formatShort } from "@/hooks/use-elapsed";
 
 import {
@@ -130,7 +130,7 @@ function FieldApp() {
       <div className="mx-auto max-w-2xl px-4 py-5">
         {session ? (
           <header className="flex items-center justify-between gap-3 rounded-full border bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
-            <img src={popsLogoTransparent} alt="POPS Pest Care Pvt Ltd logo" className="h-7 w-auto" />
+            <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-7 w-auto" />
             <Link
               to="/admin"
               className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background"
@@ -190,7 +190,7 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
   return (
     <Card className="mx-auto max-w-md rounded-3xl border-0 bg-card/85 shadow-lg backdrop-blur">
       <CardHeader className="items-center pb-2">
-        <img src={popsLogo.url} alt="POPS Pest Care Pvt Ltd logo" className="h-16 w-auto" />
+        <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-16 w-auto" />
         <CardTitle className="sr-only">Employee sign in</CardTitle>
       </CardHeader>
       <CardContent>
