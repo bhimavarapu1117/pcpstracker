@@ -101,14 +101,14 @@ export async function readRange(range: string): Promise<string[][]> {
 
 export async function appendRow(range: string, row: (string | number)[]) {
   await gateway(
-    `/spreadsheets/${SPREADSHEET_ID}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+    `/spreadsheets/${SPREADSHEET_ID}/values/${range}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
     { method: "POST", body: JSON.stringify({ values: [row] }) },
   );
   invalidateReads();
 }
 
 export async function updateRange(range: string, values: (string | number)[][]) {
-  await gateway(`/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`, {
+  await gateway(`/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=RAW`, {
     method: "PUT",
     body: JSON.stringify({ values }),
   });
