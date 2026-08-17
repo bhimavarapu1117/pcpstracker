@@ -253,6 +253,9 @@ function AdminPage() {
                     value={date}
                     onChange={(e) => {
                       setDate(e.target.value);
+                      setFilterKey("custom");
+                      setRosterPage(1);
+                      setVisitsPage(1);
                       load(passcode, e.target.value);
                     }}
                   />
@@ -282,7 +285,64 @@ function AdminPage() {
                   <LogOut className="size-4" /> Sign out
                 </Button>
               </div>
+
+              <div className="flex flex-wrap items-end justify-end gap-2">
+                <Select
+                  value={filterKey}
+                  onValueChange={(v) => {
+                    setFilterKey(v);
+                    setRosterPage(1);
+                    setVisitsPage(1);
+                    if (v === "custom") return;
+                    const day = 86_400_000;
+                    const now = new Date();
+                    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                    let targetDate = now;
+                    if (v === "today") targetDate = new Date(startOfToday);
+                    else if (v === "yesterday") targetDate = new Date(startOfToday - day);
+                    else if (v === "7d") targetDate = new Date(startOfToday - 6 * day);
+                    else if (v === "30d") targetDate = new Date(startOfToday - 29 * day);
+                    const nextDate = targetDate.toISOString().slice(0, 10);
+                    setDate(nextDate);
+                    load(passcode, nextDate);
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-[150px] rounded-full bg-card shadow-sm">
+                    <SelectValue placeholder="Filter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                    <SelectItem value="7d">Last 7 days</SelectItem>
+                    <SelectItem value="30d">Last 30 days</SelectItem>
+                    <SelectItem value="custom">Custom dates</SelectItem>
+                  </SelectContent>
+                </Select>
+                {filterKey === "custom" ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      value={customFrom}
+                      onChange={(e) => {
+                        setCustomFrom(e.target.value);
+                        setDate(e.target.value);
+                        setRosterPage(1);
+                        setVisitsPage(1);
+                        if (e.target.value) load(passcode, e.target.value);
+                      }}
+                      className="h-9 w-[140px] rounded-full bg-card shadow-sm"
+                    />
+                    <Input
+                      type="date"
+                      value={customTo}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="h-9 w-[140px] rounded-full bg-card shadow-sm"
+                    />
+                  </div>
+                ) : null}
+              </div>
             </div>
+
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <HeroStat
