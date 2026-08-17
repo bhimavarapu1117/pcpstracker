@@ -154,7 +154,7 @@ function FieldApp() {
 
       <Dialog open={ready && !session} onOpenChange={() => {}}>
         <DialogContent
-          className="rounded-3xl sm:max-w-sm"
+          className="rounded-3xl sm:max-w-sm [&>button]:hidden"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
