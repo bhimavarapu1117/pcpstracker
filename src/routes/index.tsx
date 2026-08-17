@@ -300,6 +300,10 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
   const [notes, setNotes] = useState("");
   const [frozenWorkSeconds, setFrozenWorkSeconds] = useState<number | null>(null);
   const [refreshingSites, setRefreshingSites] = useState(false);
+  const [rangeKey, setRangeKey] = useState<string>("7d");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [page, setPage] = useState(1);
 
   const sites = useQuery({
     queryKey: ["sites"],
