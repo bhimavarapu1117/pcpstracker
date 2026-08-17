@@ -403,7 +403,14 @@ function AdminPage() {
                     `${v.siteName} (${v.customer})`,
                     v.action.replace("SITE_", "").replace("_", " "),
                     `${v.distance} m`,
-                    <Badge variant={v.withinGeofence ? "default" : "destructive"}>
+                    <Badge
+                      variant={v.withinGeofence ? "default" : "destructive"}
+                      className={
+                        v.withinGeofence
+                          ? "bg-google-green text-google-green-foreground hover:bg-google-green/90"
+                          : ""
+                      }
+                    >
                       {v.withinGeofence ? "Inside" : "Outside"}
                     </Badge>,
                     <MapLink href={v.mapLink} />,
