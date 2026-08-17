@@ -35,7 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import popsLogo from "@/assets/pops-logo.png.asset.json";
+import popsLogo from "@/assets/pops-logo-transparent.png";
 import { useElapsed, formatDuration, formatShort } from "@/hooks/use-elapsed";
 
 import {
@@ -128,21 +128,18 @@ function FieldApp() {
   return (
     <main className="min-h-screen">
       <div className="mx-auto max-w-2xl px-4 py-5">
-        <header className="flex items-center justify-between gap-3 rounded-full border bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
-          <div className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-full bg-accent text-accent-foreground">
-              <Satellite className="size-4" />
-            </span>
-            <span className="text-sm font-semibold tracking-tight">Attendance Tracker</span>
-          </div>
+        {session ? (
+          <header className="flex items-center justify-between gap-3 rounded-full border bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
+            <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-7 w-auto" />
+            <Link
+              to="/admin"
+              className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background"
+            >
+              Admin
+            </Link>
+          </header>
+        ) : null}
 
-          <Link
-            to="/admin"
-            className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background"
-          >
-            Admin
-          </Link>
-        </header>
 
         {session ? (
           <div className="mt-6">
@@ -193,7 +190,7 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
   return (
     <Card className="mx-auto max-w-md rounded-3xl border-0 bg-card/85 shadow-lg backdrop-blur">
       <CardHeader className="items-center pb-2">
-        <img src={popsLogo.url} alt="POPS Pest Care Pvt Ltd logo" className="h-16 w-auto" />
+        <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-16 w-auto" />
         <CardTitle className="sr-only">Employee sign in</CardTitle>
       </CardHeader>
       <CardContent>
@@ -231,7 +228,14 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
           >
             {busy ? "Checking…" : "Sign in"}
           </Button>
+          <Link
+            to="/admin"
+            className="block w-full rounded-full border bg-card px-4 py-2 text-center text-sm font-medium"
+          >
+            Admin
+          </Link>
           <p className="text-center text-xs text-muted-foreground">Demo login: EMP001 / 1234</p>
+
         </form>
       </CardContent>
     </Card>
