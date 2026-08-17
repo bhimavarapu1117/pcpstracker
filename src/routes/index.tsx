@@ -517,13 +517,6 @@ function Workspace({ session, onLogout, dayOpen, setDayOpen }: { session: Sessio
               <span className="min-w-0 truncate">
                 {fix ? "Location ready" : (gpsError ?? "Getting your location…")}
               </span>
-              <button
-                type="button"
-                className="inline-flex shrink-0 items-center gap-1 underline underline-offset-4"
-                onClick={() => refreshFix().catch(() => toast.error(gpsError ?? "GPS unavailable."))}
-              >
-                <RefreshCw className="size-3" /> Refresh
-              </button>
             </div>
 
             <button
