@@ -251,24 +251,90 @@ export type GeoPayload = {
   notes?: string | undefined;
 };
 
+/**
+ * Attendance sheet layout (one row per shift):
+ * A Employee ID | B Employee Name | C Login Status | D Login Time | E Login Date
+ * F Logout Status | G Logout Time | H Logout Date | I Google Maps | J Notes
+ */
+export const ATTENDANCE_RANGE = "Attendance!A2:J2000";
+
+export type Shift = {
+  employeeId: string;
+  employeeName: string;
+  loginIso: string | null;
+  logoutIso: string | null;
+  mapLink: string;
+  notes: string;
+};
+
+export function parseShifts(rows: string[][]): Shift[] {
+  return rows
+    .filter((r) => r[0])
+    .map((r) => ({
+      employeeId: String(r[0]).trim(),
+      employeeName: String(r[1] ?? ""),
+      loginIso: istToIso(String(r[4] ?? ""), String(r[3] ?? "")),
+      logoutIso: istToIso(String(r[7] ?? ""), String(r[6] ?? "")),
+      mapLink: String(r[8] ?? ""),
+      notes: String(r[9] ?? ""),
+    }));
+}
+
 export async function writeAttendance(data: GeoPayload & { action: string }) {
   const name = await getEmployeeName(data.employeeId);
   const now = new Date();
   const link = mapsLink(data.latitude, data.longitude);
-  await appendRow("Attendance!A:J", [
-    now.toISOString(),
-    isoDate(now),
-    data.employeeId,
-    name,
-    data.action,
-    data.latitude,
-    data.longitude,
-    data.accuracy,
-    link,
-    data.notes ?? "",
-  ]);
+
+  if (data.action === "CHECK_IN") {
+    await appendRow("Attendance!A:J", [
+      data.employeeId,
+      name,
+      "LOGGED IN",
+      istTime(now),
+      istDate(now),
+      "",
+      "",
+      "",
+      link,
+      data.notes ?? "",
+    ]);
+    return { success: true, mapLink: link, employeeName: name };
+  }
+
+  // CHECK_OUT: close the last open row for this employee.
+  const rows = await readRangeFresh(ATTENDANCE_RANGE);
+  let target = -1;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const r = rows[i] ?? [];
+    if (String(r[0] ?? "").trim() === data.employeeId && !String(r[5] ?? "").trim()) {
+      target = i;
+      break;
+    }
+  }
+
+  if (target === -1) {
+    await appendRow("Attendance!A:J", [
+      data.employeeId,
+      name,
+      "",
+      "",
+      "",
+      "LOGGED OUT",
+      istTime(now),
+      istDate(now),
+      link,
+      data.notes ?? "",
+    ]);
+  } else {
+    const sheetRow = target + 2; // data starts at row 2
+    await updateRange(`Attendance!F${sheetRow}:J${sheetRow}`, [
+      ["LOGGED OUT", istTime(now), istDate(now), link, data.notes ?? ""],
+    ]);
+  }
+
   return { success: true, mapLink: link, employeeName: name };
 }
+
 
 export async function writeSiteVisit(data: GeoPayload & { action: string; siteId: string }) {
   const [name, sites] = await Promise.all([getEmployeeName(data.employeeId), getSites()]);
