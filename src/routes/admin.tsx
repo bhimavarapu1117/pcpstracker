@@ -216,224 +216,259 @@ function AdminPage() {
             </CardContent>
           </Card>
         ) : (
-          <>
+          <Tabs defaultValue="roster" className="space-y-6">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                Good day, <span className="text-primary">Admin</span>
+              <h1 className="text-4xl font-semibold tracking-tight text-primary">
+                Good day, Admin
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Here’s what’s happening with your field crew today.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="date" className="text-xs">
-                  Date
-                </Label>
-                <Input
-                  id="date"
-                  type="date"
-                  className="w-44"
-                  value={date}
-                  onChange={(e) => {
-                    setDate(e.target.value);
-                    load(passcode, e.target.value);
-                  }}
-                />
-              </div>
-              <Button variant="outline" disabled={busy} onClick={() => load()}>
-                <RefreshCw className="size-4" /> Refresh
-              </Button>
-              <a href={data.spreadsheetUrl} target="_blank" rel="noreferrer">
-                <Button variant="secondary">
-                  <ExternalLink className="size-4" /> Google Sheet
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <TabsList className="h-auto flex-wrap justify-start rounded-full bg-transparent p-0 gap-2">
+                <TabsTrigger
+                  className="rounded-full bg-card px-5 py-2 shadow-sm data-[state=active]:bg-foreground data-[state=active]:text-background"
+                  value="roster"
+                >
+                  Attendance
+                </TabsTrigger>
+                <TabsTrigger
+                  className="rounded-full bg-card px-5 py-2 shadow-sm data-[state=active]:bg-foreground data-[state=active]:text-background"
+                  value="visits"
+                >
+                  Site visits
+                </TabsTrigger>
+                <TabsTrigger
+                  className="rounded-full bg-card px-5 py-2 shadow-sm data-[state=active]:bg-foreground data-[state=active]:text-background"
+                  value="sites"
+                >
+                  Sites
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="date" className="text-xs text-muted-foreground">
+                    Date
+                  </Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    className="w-40 rounded-full border-0 bg-card shadow-sm"
+                    value={date}
+                    onChange={(e) => {
+                      setDate(e.target.value);
+                      load(passcode, e.target.value);
+                    }}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full bg-card shadow-sm"
+                  disabled={busy}
+                  onClick={() => load()}
+                  aria-label="Refresh"
+                >
+                  <RefreshCw className="size-4" />
                 </Button>
-              </a>
-              <Button
-                variant="outline"
-                className="border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                onClick={() => {
-                  setData(null);
-                  setPasscode("");
-                }}
-              >
-                <LogOut className="size-4" /> Sign out
-              </Button>
+                <a href={data.spreadsheetUrl} target="_blank" rel="noreferrer">
+                  <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+                    <ExternalLink className="size-4" /> Google Sheet
+                  </Button>
+                </a>
+                <Button
+                  className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90"
+                  onClick={() => {
+                    setData(null);
+                    setPasscode("");
+                  }}
+                >
+                  <LogOut className="size-4" /> Sign out
+                </Button>
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-              <Stat label="Present" value={`${data.totals.present}/${data.totals.employees}`} />
+              <HeroStat
+                tone="dark"
+                label="Present"
+                value={`${data.totals.present}/${data.totals.employees}`}
+                filled={data.totals.present}
+                total={data.totals.employees || 1}
+              />
+              <HeroStat
+                tone="blue"
+                label="Outside geofence"
+                value={String(data.totals.outsideGeofence)}
+                filled={Math.min(data.totals.outsideGeofence, 8)}
+                total={8}
+              />
               <Stat label="Still logged in" value={String(data.totals.stillIn)} />
               <Stat label="Total hours" value={`${data.totals.hours}h`} />
               <Stat label="Site visits" value={String(data.totals.visits)} />
-              <Stat label="Outside geofence" value={String(data.totals.outsideGeofence)} />
             </div>
 
-            <Card className="rounded-3xl border-0 shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Who’s in right now</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {data.roster.filter((r) => r.openSince).length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nobody is logged in.</p>
-                ) : (
-                  data.roster
-                    .filter((r) => r.openSince)
-                    .map((r) => <LiveRow key={r.employeeId} row={r} />)
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-3xl border-0 shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Open site visits</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {openVisits.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No site visit is waiting for a check-out.
-                  </p>
-                ) : (
-                  openVisits.map((v) => (
-                    <div
-                      key={v.sheetRow}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {v.employeeName || v.employeeId} · {v.siteName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Checked in {v.inIso ? time(v.inIso) : "-"} · still open
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="rounded-full"
-                        disabled={closingRow === v.sheetRow}
-                        onClick={() => forceClose(v)}
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <TabsContent value="roster" className="mt-0">
+                  <TableCard
+                    head={["Employee", "ID", "Login", "Logout", "Worked", "Visits", "Last seen"]}
+                    rows={data.roster.map((r) => [
+                      r.name,
+                      r.employeeId,
+                      r.checkIn || "-",
+                      r.checkOut || (r.openSince ? "Running" : "-"),
+                      <WorkedCell openSince={r.openSince} completedSeconds={r.completedSeconds} />,
+                      String(r.visits),
+                      r.lastSeen ? (
+                        <a
+                          className="underline underline-offset-4"
+                          href={r.lastSeen.mapLink}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {time(r.lastSeen.timestamp)} · ±{r.lastSeen.accuracy} m
+                        </a>
+                      ) : (
+                        "-"
+                      ),
+                    ])}
+                  />
+                </TabsContent>
+                <TabsContent value="visits" className="mt-0">
+                  <TableCard
+                    head={["Time", "Employee", "Site", "Action", "Distance", "Geofence", "Map"]}
+                    rows={data.visits.map((v) => [
+                      time(v.timestamp),
+                      v.employeeName,
+                      `${v.siteName} (${v.customer})`,
+                      v.action.replace("SITE_", "").replace("_", " "),
+                      `${v.distance} m`,
+                      <Badge
+                        variant={v.withinGeofence ? "default" : "destructive"}
+                        className={
+                          v.withinGeofence
+                            ? "bg-google-green text-google-green-foreground hover:bg-google-green/90"
+                            : ""
+                        }
                       >
-                        {closingRow === v.sheetRow ? "Closing…" : "Force check-out"}
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+                        {v.withinGeofence ? "Inside" : "Outside"}
+                      </Badge>,
+                      <MapLink href={v.mapLink} />,
+                    ])}
+                  />
+                </TabsContent>
+                <TabsContent value="sites" className="mt-0">
+                  <TableCard
+                    head={["Site ID", "Site", "Customer", "Address", "Geofence"]}
+                    rows={data.sites.map((s) => [
+                      s.siteId,
+                      s.siteName,
+                      s.customer,
+                      s.address,
+                      `${s.radius} m`,
+                    ])}
+                  />
+                </TabsContent>
+              </div>
 
-            <Card className="rounded-3xl border-0 shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Open logins</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {openShifts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Nobody is waiting for a logout.
-                  </p>
-                ) : (
-                  openShifts.map((s) => (
-                    <div
-                      key={s.sheetRow}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {s.employeeName || s.employeeId}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Logged in {s.inIso ? time(s.inIso) : "-"} · still open
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="rounded-full"
-                        disabled={closingShiftRow === s.sheetRow}
-                        onClick={() => forceLogout(s)}
-                      >
-                        {closingShiftRow === s.sheetRow ? "Logging out…" : "Force logout"}
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
-            <Tabs defaultValue="roster">
-              <TabsList className="rounded-full bg-card p-1 shadow-sm">
-                <TabsTrigger className="rounded-full px-4" value="roster">Attendance</TabsTrigger>
-                <TabsTrigger className="rounded-full px-4" value="visits">Site visits</TabsTrigger>
-                <TabsTrigger className="rounded-full px-4" value="sites">Sites</TabsTrigger>
-              </TabsList>
-
-
-              <TabsContent value="roster">
-                <TableCard
-                  head={["Employee", "ID", "Login", "Logout", "Worked", "Visits", "Last seen"]}
-                  rows={data.roster.map((r) => [
-                    r.name,
-                    r.employeeId,
-                    r.checkIn || "-",
-                    r.checkOut || (r.openSince ? "Running" : "-"),
-                    <WorkedCell openSince={r.openSince} completedSeconds={r.completedSeconds} />,
-                    String(r.visits),
-                    r.lastSeen ? (
-                      <a
-                        className="underline underline-offset-4"
-                        href={r.lastSeen.mapLink}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {time(r.lastSeen.timestamp)} · ±{r.lastSeen.accuracy} m
-                      </a>
+              <div className="space-y-4">
+                <Card className="rounded-3xl border-0 shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Who’s in right now</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {data.roster.filter((r) => r.openSince).length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nobody is logged in.</p>
                     ) : (
-                      "-"
-                    ),
-                  ])}
-                />
-              </TabsContent>
-              <TabsContent value="visits">
-                <TableCard
-                  head={["Time", "Employee", "Site", "Action", "Distance", "Geofence", "Map"]}
-                  rows={data.visits.map((v) => [
-                    time(v.timestamp),
-                    v.employeeName,
-                    `${v.siteName} (${v.customer})`,
-                    v.action.replace("SITE_", "").replace("_", " "),
-                    `${v.distance} m`,
-                    <Badge
-                      variant={v.withinGeofence ? "default" : "destructive"}
-                      className={
-                        v.withinGeofence
-                          ? "bg-google-green text-google-green-foreground hover:bg-google-green/90"
-                          : ""
-                      }
-                    >
-                      {v.withinGeofence ? "Inside" : "Outside"}
-                    </Badge>,
-                    <MapLink href={v.mapLink} />,
-                  ])}
-                />
-              </TabsContent>
+                      data.roster
+                        .filter((r) => r.openSince)
+                        .map((r) => <LiveRow key={r.employeeId} row={r} />)
+                    )}
+                  </CardContent>
+                </Card>
 
+                <Card className="rounded-3xl border-0 shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Open site visits</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {openVisits.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No site visit is waiting for a check-out.
+                      </p>
+                    ) : (
+                      openVisits.map((v) => (
+                        <div
+                          key={v.sheetRow}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {v.employeeName || v.employeeId} · {v.siteName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Checked in {v.inIso ? time(v.inIso) : "-"} · still open
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="rounded-full"
+                            disabled={closingRow === v.sheetRow}
+                            onClick={() => forceClose(v)}
+                          >
+                            {closingRow === v.sheetRow ? "Closing…" : "Force check-out"}
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
 
-
-              <TabsContent value="sites">
-                <TableCard
-                  head={["Site ID", "Site", "Customer", "Address", "Geofence"]}
-                  rows={data.sites.map((s) => [
-                    s.siteId,
-                    s.siteName,
-                    s.customer,
-                    s.address,
-                    `${s.radius} m`,
-                  ])}
-                />
-              </TabsContent>
-            </Tabs>
-          </>
+                <Card className="rounded-3xl border-0 shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Open logins</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {openShifts.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Nobody is waiting for a logout.
+                      </p>
+                    ) : (
+                      openShifts.map((s) => (
+                        <div
+                          key={s.sheetRow}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-4 py-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {s.employeeName || s.employeeId}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Logged in {s.inIso ? time(s.inIso) : "-"} · still open
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="rounded-full"
+                            disabled={closingShiftRow === s.sheetRow}
+                            onClick={() => forceLogout(s)}
+                          >
+                            {closingShiftRow === s.sheetRow ? "Logging out…" : "Force logout"}
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </Tabs>
         )}
       </div>
     </main>
@@ -449,6 +484,54 @@ function Stat({ label, value }: { label: string; value: string }) {
         </span>
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function HeroStat({
+  tone,
+  label,
+  value,
+  filled,
+  total,
+}: {
+  tone: "dark" | "blue";
+  label: string;
+  value: string;
+  filled: number;
+  total: number;
+}) {
+  const count = Math.max(total, 1);
+  const on = Math.max(0, Math.min(filled, count));
+  return (
+    <Card
+      className={
+        tone === "dark"
+          ? "rounded-3xl border-0 bg-foreground text-background shadow-sm"
+          : "rounded-3xl border-0 bg-primary text-primary-foreground shadow-sm"
+      }
+    >
+      <CardContent className="space-y-4 py-5">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 items-center justify-center rounded-full bg-background/20">
+            <ArrowUpRight className="size-3.5" />
+          </span>
+          <span className="text-sm font-medium">{label}</span>
+        </div>
+        <p className="text-4xl font-semibold tracking-tight">{value}</p>
+        <div className="flex gap-1.5">
+          {Array.from({ length: count }).map((_, i) => (
+            <span
+              key={i}
+              className={
+                i < on
+                  ? "h-8 w-3.5 rounded-full bg-background"
+                  : "h-8 w-3.5 rounded-full border border-dashed border-background/50"
+              }
+            />
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
