@@ -96,6 +96,12 @@ function AdminPage() {
   const [closingRow, setClosingRow] = useState<number | null>(null);
   const [closingShiftRow, setClosingShiftRow] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [filterKey, setFilterKey] = useState<string>("today");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [rosterPage, setRosterPage] = useState(1);
+  const [visitsPage, setVisitsPage] = useState(1);
+
 
   async function loadOpenVisits(code = passcode) {
     try {
