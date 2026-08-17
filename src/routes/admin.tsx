@@ -512,6 +512,8 @@ function AdminPage() {
                     </Badge>,
                     <MapLink href={v.mapLink} />,
                   ])}
+                  page={visitsPage}
+                  onPageChange={setVisitsPage}
                 />
               </TabsContent>
               <TabsContent value="sites" className="mt-0">
