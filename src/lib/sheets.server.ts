@@ -626,20 +626,28 @@ export async function buildAdminData(date: string) {
   });
 
 
-  const visits = visitRows
-    .filter((r) => r[1] === date)
-    .map((r) => ({
-      timestamp: String(r[0]),
-      employeeId: String(r[2]),
-      employeeName: String(r[3]),
-      siteName: String(r[5]),
-      customer: String(r[6]),
-      action: String(r[7]),
-      accuracy: Number(r[10]) || 0,
-      distance: Number(r[11]) || 0,
-      withinGeofence: String(r[12]) === "YES",
-      mapLink: String(r[13] ?? ""),
-    }));
+  const visits = parseVisits(visitRows)
+    .filter(
+      (v) =>
+        (v.inIso && isoDate(new Date(v.inIso)) === date) ||
+        (v.outIso && isoDate(new Date(v.outIso)) === date),
+    )
+    .flatMap((v) => {
+      const base = {
+        employeeId: v.employeeId,
+        employeeName: v.employeeName,
+        siteName: v.siteName,
+        customer: "",
+        accuracy: 0,
+        distance: v.distance,
+        withinGeofence: v.withinGeofence,
+        mapLink: v.mapLink,
+      };
+      const out: (typeof base & { timestamp: string; action: string })[] = [];
+      if (v.inIso) out.push({ ...base, timestamp: v.inIso, action: "SITE_CHECK_IN" });
+      if (v.outIso) out.push({ ...base, timestamp: v.outIso, action: "SITE_CHECK_OUT" });
+      return out;
+    });
 
   const locations = locationRows
     .filter((r) => r[1] === date)
