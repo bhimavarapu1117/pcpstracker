@@ -47,7 +47,9 @@ type Admin = Extract<Awaited<ReturnType<typeof getAdminData>>, { success: true }
 const today = () => new Date().toISOString().slice(0, 10);
 const time = (iso: string) => {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "-" : d.toISOString().slice(11, 16);
+  return Number.isNaN(d.getTime())
+    ? "-"
+    : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
 };
 
 function AdminPage() {
