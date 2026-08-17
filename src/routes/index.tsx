@@ -456,7 +456,7 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
       </Card>
 
       {/* Site visit */}
-      <Card>
+      <Card className="rounded-3xl border-0 shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Building2 className="size-4" /> Site visit
@@ -507,7 +507,7 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
       </Card>
 
       {/* Today's timeline */}
-      <Card>
+      <Card className="rounded-3xl border-0 shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Today’s activity</CardTitle>
         </CardHeader>
@@ -550,7 +550,7 @@ function Workspace({ session, onLogout }: { session: Session; onLogout: () => vo
       </Card>
 
       {/* Tracking */}
-      <Card>
+      <Card className="rounded-3xl border-0 shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Radio className="size-4" /> Live tracking
