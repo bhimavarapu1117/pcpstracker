@@ -39,9 +39,9 @@ import { cn } from "@/lib/utils";
 import {
   loginEmployee,
   listSites,
+  refreshSites,
   recordAttendance,
   recordSiteVisit,
-  
   getTodayStatus,
 } from "@/lib/attendance.functions";
 
