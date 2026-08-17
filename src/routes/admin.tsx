@@ -67,21 +67,41 @@ type OpenVisit = {
   inIso: string | null;
 };
 
+type OpenShift = {
+  sheetRow: number;
+  employeeId: string;
+  employeeName: string;
+  inIso: string | null;
+};
+
 function AdminPage() {
   const fetchAdmin = useServerFn(getAdminData);
   const fetchOpenVisits = useServerFn(listOpenVisitsAdmin);
   const closeVisit = useServerFn(forceCloseVisitAdmin);
+  const fetchOpenShifts = useServerFn(listOpenShiftsAdmin);
+  const closeShift = useServerFn(forceCloseShiftAdmin);
   const [passcode, setPasscode] = useState("");
   const [date, setDate] = useState(today());
   const [data, setData] = useState<Admin | null>(null);
   const [openVisits, setOpenVisits] = useState<OpenVisit[]>([]);
+  const [openShifts, setOpenShifts] = useState<OpenShift[]>([]);
   const [closingRow, setClosingRow] = useState<number | null>(null);
+  const [closingShiftRow, setClosingShiftRow] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function loadOpenVisits(code = passcode) {
     try {
       const res = await fetchOpenVisits({ data: { passcode: code } });
       if (res.success) setOpenVisits(res.visits);
+    } catch {
+      /* non-critical */
+    }
+  }
+
+  async function loadOpenShifts(code = passcode) {
+    try {
+      const res = await fetchOpenShifts({ data: { passcode: code } });
+      if (res.success) setOpenShifts(res.shifts);
     } catch {
       /* non-critical */
     }
@@ -106,6 +126,29 @@ function AdminPage() {
     }
   }
 
+  async function forceLogout(s: OpenShift) {
+    setClosingShiftRow(s.sheetRow);
+    try {
+      const res = await closeShift({
+        data: {
+          passcode,
+          sheetRow: s.sheetRow,
+          notes: "Logged out by admin (employee did not log out)",
+        },
+      });
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      toast.success(`Logged out ${s.employeeName || s.employeeId}`);
+      await Promise.all([load(), loadOpenShifts()]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not log the employee out.");
+    } finally {
+      setClosingShiftRow(null);
+    }
+  }
+
   async function load(code = passcode, day = date) {
     setBusy(true);
     try {
@@ -115,13 +158,14 @@ function AdminPage() {
         return;
       }
       setData(res.data);
-      await loadOpenVisits(code);
+      await Promise.all([loadOpenVisits(code), loadOpenShifts(code)]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load dashboard.");
     } finally {
       setBusy(false);
     }
   }
+
 
 
   return (
