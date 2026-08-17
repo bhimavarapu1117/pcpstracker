@@ -126,20 +126,19 @@ function FieldApp() {
   };
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-2xl px-4 py-5">
+    <main className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-2xl px-4 py-5">
         {session ? (
           <header className="flex items-center justify-between gap-3 rounded-full border bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
             <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-7 w-auto" />
             <Link
               to="/admin"
-              className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background"
+              className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background transition-colors hover:bg-primary hover:text-primary-foreground"
             >
               Admin
             </Link>
           </header>
         ) : null}
-
 
         {session ? (
           <div className="mt-6">
