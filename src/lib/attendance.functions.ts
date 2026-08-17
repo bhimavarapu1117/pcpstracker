@@ -91,7 +91,13 @@ export const listOpenVisitsAdmin = createServerFn({ method: "POST" })
       return { success: false as const, message: "Incorrect admin passcode." };
     }
     const { listOpenVisits } = await import("./sheets.server");
-    return { success: true as const, visits: await listOpenVisits() };
+    try {
+      return { success: true as const, visits: await listOpenVisits() };
+    } catch (err) {
+      console.error("listOpenVisitsAdmin failed", err);
+      return { success: true as const, visits: [] };
+    }
+
   });
 
 export const forceCloseVisitAdmin = createServerFn({ method: "POST" })
