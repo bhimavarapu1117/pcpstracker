@@ -411,19 +411,7 @@ function AdminPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="history">
-                <TableCard
-                  head={["Time", "Employee", "Latitude", "Longitude", "Accuracy", "Map"]}
-                  rows={data.locations.map((l) => [
-                    time(l.timestamp),
-                    l.employeeName,
-                    l.latitude.toFixed(6),
-                    l.longitude.toFixed(6),
-                    `±${l.accuracy} m`,
-                    <MapLink href={l.mapLink} />,
-                  ])}
-                />
-              </TabsContent>
+
 
               <TabsContent value="sites">
                 <TableCard
