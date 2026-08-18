@@ -712,9 +712,9 @@ export async function readTodayForEmployee(employeeId: string) {
           timestamp: v.inIso,
           type: "SITE_CHECK_IN",
           label: `${v.siteName} — site in`,
-          mapLink: v.mapLink,
-          distance: v.distance,
-          withinGeofence: v.withinGeofence,
+          mapLink: v.inMapLink,
+          distance: v.inDistance,
+          ...(v.inWithinGeofence === null ? {} : { withinGeofence: v.inWithinGeofence }),
           notes: v.notes,
         });
       if (v.outIso)
@@ -722,13 +722,14 @@ export async function readTodayForEmployee(employeeId: string) {
           timestamp: v.outIso,
           type: "SITE_CHECK_OUT",
           label: `${v.siteName} — site out`,
-          mapLink: v.mapLink,
-          distance: v.distance,
-          withinGeofence: v.withinGeofence,
+          mapLink: v.outMapLink || v.inMapLink,
+          distance: v.outDistance,
+          ...(v.outWithinGeofence === null ? {} : { withinGeofence: v.outWithinGeofence }),
           notes: v.notes,
         });
       return out;
     }),
+
   ].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return {
