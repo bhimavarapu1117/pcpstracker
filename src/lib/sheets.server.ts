@@ -273,6 +273,77 @@ export async function getSites(): Promise<Site[]> {
     }));
 }
 
+/* ---------- Sites: address -> latitude/longitude/Maps sync ---------- */
+
+const MAPS_GATEWAY = "https://connector-gateway.lovable.dev/google_maps";
+
+async function geocodeAddress(address: string) {
+  const lovableKey = process.env["LOVABLE_API_KEY"];
+  const mapsKey = process.env["GOOGLE_MAPS_API_KEY"];
+  if (!lovableKey || !mapsKey) throw new Error("Google Maps connection is not configured.");
+
+  const res = await fetch(
+    `${MAPS_GATEWAY}/maps/api/geocode/json?address=${encodeURIComponent(address)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": mapsKey,
+      },
+    },
+  );
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Geocoding failed [${res.status}]: ${body}`);
+  }
+  const data = (await res.json()) as {
+    status?: string;
+    results?: { geometry?: { location?: { lat: number; lng: number } } }[];
+  };
+  const loc = data.results?.[0]?.geometry?.location;
+  if (!loc) return null;
+  return { latitude: loc.lat, longitude: loc.lng };
+}
+
+/**
+ * Sites sheet: column D (Address) is the source of truth.
+ * Whenever an address is new or edited, latitude (E), longitude (F) and the
+ * Google Maps link (I, an ARRAYFORMULA over the coordinates) are refreshed
+ * automatically. Column J stores the address that was last geocoded.
+ */
+export async function syncSiteGeocodes(limit = 30) {
+  const rows = await readRangeFresh("Sites!A2:J1000");
+  let updated = 0;
+
+  for (let i = 0; i < rows.length && updated < limit; i++) {
+    const r = rows[i] ?? [];
+    if (!String(r[0] ?? "").trim()) continue;
+
+    const address = String(r[3] ?? "").trim();
+    if (!address) continue;
+
+    const lat = Number(r[4]);
+    const lng = Number(r[5]);
+    const lastGeocoded = String(r[9] ?? "").trim();
+    const coordsMissing = !Number.isFinite(lat) || !Number.isFinite(lng) || (!lat && !lng);
+    if (!coordsMissing && lastGeocoded === address) continue;
+
+    try {
+      const hit = await geocodeAddress(address);
+      if (!hit) continue;
+      const sheetRow = i + 2;
+      await updateRange(`Sites!E${sheetRow}:F${sheetRow}`, [[hit.latitude, hit.longitude]]);
+      await updateRange(`Sites!J${sheetRow}:J${sheetRow}`, [[address]]);
+      updated += 1;
+    } catch (err) {
+      console.error(`Geocode sync failed for row ${i + 2}`, err);
+    }
+  }
+
+  if (updated) invalidateReads();
+  return { updated };
+}
+
+
 /* ---------- writes ---------- */
 
 export type GeoPayload = {

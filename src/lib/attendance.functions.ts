@@ -32,10 +32,16 @@ export const listSites = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const refreshSites = createServerFn({ method: "GET" }).handler(async () => {
-  const { invalidateReads, getSites } = await import("./sheets.server");
+  const { invalidateReads, getSites, syncSiteGeocodes } = await import("./sheets.server");
   invalidateReads();
+  try {
+    await syncSiteGeocodes();
+  } catch (err) {
+    console.error("syncSiteGeocodes failed", err);
+  }
   return getSites();
 });
+
 
 export const getTodayStatus = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ employeeId: z.string().min(1) }).parse(d))
@@ -85,9 +91,17 @@ export const getAdminData = createServerFn({ method: "POST" })
     if (data.passcode.trim() !== expected) {
       return { success: false as const, message: "Incorrect admin passcode." };
     }
-    const { buildAdminData, isoDate } = await import("./sheets.server");
+    const { buildAdminData, isoDate, syncSiteGeocodes } = await import("./sheets.server");
+    try {
+      await syncSiteGeocodes();
+    } catch (err) {
+      console.error("syncSiteGeocodes failed", err);
+    }
     return { success: true as const, data: await buildAdminData(data.date || isoDate()) };
   });
+
+
+
 
 export const listOpenVisitsAdmin = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ passcode: z.string().min(1) }).parse(d))
