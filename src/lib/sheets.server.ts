@@ -790,15 +790,35 @@ export async function buildAdminData(date: string) {
         siteName: v.siteName,
         customer: "",
         accuracy: 0,
-        distance: v.distance,
-        withinGeofence: v.withinGeofence,
-        mapLink: v.mapLink,
       };
-      const out: (typeof base & { timestamp: string; action: string })[] = [];
-      if (v.inIso) out.push({ ...base, timestamp: v.inIso, action: "SITE_CHECK_IN" });
-      if (v.outIso) out.push({ ...base, timestamp: v.outIso, action: "SITE_CHECK_OUT" });
+      const out: (typeof base & {
+        timestamp: string;
+        action: string;
+        distance: number;
+        withinGeofence: boolean;
+        mapLink: string;
+      })[] = [];
+      if (v.inIso)
+        out.push({
+          ...base,
+          timestamp: v.inIso,
+          action: "SITE_CHECK_IN",
+          distance: v.inDistance,
+          withinGeofence: v.inWithinGeofence ?? true,
+          mapLink: v.inMapLink,
+        });
+      if (v.outIso)
+        out.push({
+          ...base,
+          timestamp: v.outIso,
+          action: "SITE_CHECK_OUT",
+          distance: v.outDistance,
+          withinGeofence: v.outWithinGeofence ?? true,
+          mapLink: v.outMapLink || v.inMapLink,
+        });
       return out;
     });
+
 
   const locations: {
     timestamp: string;
