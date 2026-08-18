@@ -435,11 +435,31 @@ export async function forceCloseShift(sheetRow: number, notes?: string) {
 /**
  * SiteVisits sheet layout (one row per visit):
  * A Employee ID | B Employee Name | C Site ID | D Site Name
- * E Check-in Status | F Check-in Time | G Check-in Date
- * H Check-out Status | I Check-out Time | J Check-out Date
- * K Distance From Site (m) | L Within Geofence | M Google Maps | N Notes
+ * E Check-in Status | F Check-in Time | G Check-in Date | H Check-in Geofence | I Check-in Distance (m) | J Check-in Maps
+ * K Check-out Status | L Check-out Time | M Check-out Date | N Check-out Geofence | O Check-out Distance (m) | P Check-out Maps
+ * Q Notes
  */
-export const SITEVISITS_RANGE = "SiteVisits!A2:N2000";
+export const SITEVISITS_RANGE = "SiteVisits!A2:Q2000";
+
+export const SITEVISITS_HEADERS = [
+  "Employee ID",
+  "Employee Name",
+  "Site ID",
+  "Site Name",
+  "Check-in Status",
+  "Check-in Time",
+  "Check-in Date",
+  "Check-in Geofence",
+  "Check-in Distance (m)",
+  "Check-in Google Maps",
+  "Check-out Status",
+  "Check-out Time",
+  "Check-out Date",
+  "Check-out Geofence",
+  "Check-out Distance (m)",
+  "Check-out Google Maps",
+  "Notes",
+];
 
 export type Visit = {
   employeeId: string;
@@ -448,11 +468,20 @@ export type Visit = {
   siteName: string;
   inIso: string | null;
   outIso: string | null;
-  distance: number;
-  withinGeofence: boolean;
-  mapLink: string;
+  inDistance: number;
+  outDistance: number;
+  inWithinGeofence: boolean | null;
+  outWithinGeofence: boolean | null;
+  inMapLink: string;
+  outMapLink: string;
   notes: string;
 };
+
+function geofenceFlag(value: unknown): boolean | null {
+  const v = String(value ?? "").trim().toUpperCase();
+  if (!v) return null;
+  return v === "YES" || v === "INSIDE";
+}
 
 export function parseVisits(rows: string[][]): Visit[] {
   return rows
@@ -463,11 +492,14 @@ export function parseVisits(rows: string[][]): Visit[] {
       siteId: String(r[2] ?? ""),
       siteName: String(r[3] ?? ""),
       inIso: istToIso(String(r[6] ?? ""), String(r[5] ?? "")),
-      outIso: istToIso(String(r[9] ?? ""), String(r[8] ?? "")),
-      distance: Number(r[10]) || 0,
-      withinGeofence: String(r[11] ?? "").toUpperCase() === "YES",
-      mapLink: String(r[12] ?? ""),
-      notes: String(r[13] ?? ""),
+      outIso: istToIso(String(r[12] ?? ""), String(r[11] ?? "")),
+      inDistance: Number(r[8]) || 0,
+      outDistance: Number(r[14]) || 0,
+      inWithinGeofence: geofenceFlag(r[7]),
+      outWithinGeofence: geofenceFlag(r[13]),
+      inMapLink: String(r[9] ?? ""),
+      outMapLink: String(r[15] ?? ""),
+      notes: String(r[16] ?? ""),
     }));
 }
 
@@ -488,7 +520,7 @@ export async function writeSiteVisit(data: GeoPayload & { action: string; siteId
       (r) =>
         String(r?.[0] ?? "").trim() === data.employeeId &&
         String(r?.[4] ?? "").trim() &&
-        !String(r?.[7] ?? "").trim(),
+        !String(r?.[10] ?? "").trim(),
     );
     if (open) {
       const openSite = String(open[3] ?? "the previous site");
@@ -496,8 +528,7 @@ export async function writeSiteVisit(data: GeoPayload & { action: string; siteId
         `You are still checked in at ${openSite}. Check out from there before starting a new site visit.`,
       );
     }
-    await appendRow("SiteVisits!A:N", [
-
+    await appendRow("SiteVisits!A:Q", [
       data.employeeId,
       name,
       site.siteId,
@@ -505,12 +536,15 @@ export async function writeSiteVisit(data: GeoPayload & { action: string; siteId
       "CHECKED IN",
       istTime(now),
       istDate(now),
-      "",
-      "",
-      "",
+      withinGeofence ? "INSIDE" : "OUTSIDE",
       Math.round(distance),
-      withinGeofence ? "YES" : "NO",
       link,
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
       data.notes ?? "",
     ]);
   } else {
@@ -522,7 +556,7 @@ export async function writeSiteVisit(data: GeoPayload & { action: string; siteId
       if (
         String(r[0] ?? "").trim() === data.employeeId &&
         String(r[2] ?? "").trim() === String(site.siteId) &&
-        !String(r[7] ?? "").trim()
+        !String(r[10] ?? "").trim()
       ) {
         target = i;
         break;
@@ -530,7 +564,7 @@ export async function writeSiteVisit(data: GeoPayload & { action: string; siteId
     }
 
     if (target === -1) {
-      await appendRow("SiteVisits!A:N", [
+      await appendRow("SiteVisits!A:Q", [
         data.employeeId,
         name,
         site.siteId,
@@ -538,23 +572,27 @@ export async function writeSiteVisit(data: GeoPayload & { action: string; siteId
         "",
         "",
         "",
+        "",
+        "",
+        "",
         "CHECKED OUT",
         istTime(now),
         istDate(now),
+        withinGeofence ? "INSIDE" : "OUTSIDE",
         Math.round(distance),
-        withinGeofence ? "YES" : "NO",
         link,
         data.notes ?? "",
       ]);
     } else {
       const sheetRow = target + 2;
-      await updateRange(`SiteVisits!H${sheetRow}:N${sheetRow}`, [
+      // Only the check-out columns are written — the check-in status stays untouched.
+      await updateRange(`SiteVisits!K${sheetRow}:Q${sheetRow}`, [
         [
           "CHECKED OUT",
           istTime(now),
           istDate(now),
+          withinGeofence ? "INSIDE" : "OUTSIDE",
           Math.round(distance),
-          withinGeofence ? "YES" : "NO",
           link,
           data.notes ?? "",
         ],
@@ -570,6 +608,7 @@ export async function writeSiteVisit(data: GeoPayload & { action: string; siteId
     siteName: site.siteName,
   };
 }
+
 
 export async function writeLocation(data: GeoPayload) {
   const name = await getEmployeeName(data.employeeId);
