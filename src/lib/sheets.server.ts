@@ -343,6 +343,26 @@ export async function syncSiteGeocodes(limit = 30) {
   return { updated };
 }
 
+/**
+ * Cooldown-guarded auto-sync so any address typed into the Sites sheet gets
+ * geocoded (lat/lng + Maps link) without anyone pressing a button.
+ */
+let lastGeoSync = 0;
+let geoSyncInFlight: Promise<unknown> | null = null;
+const GEO_SYNC_COOLDOWN_MS = 60_000;
+
+export function ensureSiteGeocodes() {
+  const now = Date.now();
+  if (geoSyncInFlight || now - lastGeoSync < GEO_SYNC_COOLDOWN_MS) return;
+  lastGeoSync = now;
+  geoSyncInFlight = syncSiteGeocodes()
+    .catch((err) => console.error("ensureSiteGeocodes failed", err))
+    .finally(() => {
+      geoSyncInFlight = null;
+    });
+}
+
+
 
 /* ---------- writes ---------- */
 
