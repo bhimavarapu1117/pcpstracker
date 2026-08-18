@@ -98,6 +98,9 @@ export const getAdminData = createServerFn({ method: "POST" })
       console.error("syncSiteGeocodes failed", err);
     }
     return { success: true as const, data: await buildAdminData(data.date || isoDate()) };
+  });
+
+
 
 
 export const listOpenVisitsAdmin = createServerFn({ method: "POST" })
