@@ -27,7 +27,8 @@ export const loginEmployee = createServerFn({ method: "POST" })
   });
 
 export const listSites = createServerFn({ method: "GET" }).handler(async () => {
-  const { getSites } = await import("./sheets.server");
+  const { getSites, ensureSiteGeocodes } = await import("./sheets.server");
+  ensureSiteGeocodes();
   return getSites();
 });
 
@@ -41,6 +42,7 @@ export const refreshSites = createServerFn({ method: "GET" }).handler(async () =
   }
   return getSites();
 });
+
 
 
 export const getTodayStatus = createServerFn({ method: "POST" })
