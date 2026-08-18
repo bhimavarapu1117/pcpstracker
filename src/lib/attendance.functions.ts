@@ -91,9 +91,14 @@ export const getAdminData = createServerFn({ method: "POST" })
     if (data.passcode.trim() !== expected) {
       return { success: false as const, message: "Incorrect admin passcode." };
     }
-    const { buildAdminData, isoDate } = await import("./sheets.server");
+    const { buildAdminData, isoDate, syncSiteGeocodes } = await import("./sheets.server");
+    try {
+      await syncSiteGeocodes();
+    } catch (err) {
+      console.error("syncSiteGeocodes failed", err);
+    }
     return { success: true as const, data: await buildAdminData(data.date || isoDate()) };
-  });
+
 
 export const listOpenVisitsAdmin = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ passcode: z.string().min(1) }).parse(d))
