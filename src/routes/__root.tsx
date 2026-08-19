@@ -85,6 +85,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "GPS attendance, site check-in/out with geofencing and location history for pest control field crews.",
       },
       { name: "author", content: "Lovable" },
+      {
+        name: "google-site-verification",
+        content: "CMvdWE1L2DHe0jCEuMce_pFfnZ_EMzU2eG6A099NUZg",
+      },
       { property: "og:title", content: "Field Attendance | Pest Control GPS Tracking" },
       {
         property: "og:description",

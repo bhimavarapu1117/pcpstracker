@@ -169,7 +169,16 @@ function FieldApp() {
               <Workspace session={session} onLogout={signOut} dayOpen={dayOpen} setDayOpen={setDayOpen} />
             </div>
           </>
-        ) : null}
+        ) : (
+          <div className="pt-10 text-center">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              POPS Pest Care employee attendance &amp; site visit tracker
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Log in with your Employee ID and PIN to record attendance and check in to sites.
+            </p>
+          </div>
+        )}
       </div>
 
       <Dialog open={ready && !session} onOpenChange={() => {}}>
