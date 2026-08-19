@@ -108,7 +108,7 @@ function Consent() {
           <div className="space-y-1">
             <h1 className="text-xl font-semibold">Sign in to continue</h1>
             <p className="text-sm text-muted-foreground">
-              Sign in with your PCPSTracker account to approve this connection.
+              Sign in with your POPSTracker account to approve this connection.
             </p>
           </div>
           <div className="space-y-2">
@@ -144,7 +144,7 @@ function Consent() {
     <main className="min-h-screen grid place-items-center p-6">
       <div className="w-full max-w-md rounded-3xl bg-card/90 backdrop-blur p-6 shadow-lg space-y-4">
         <h1 className="text-xl font-semibold">
-          Connect {client?.name ?? "an app"} to PCPSTracker
+          Connect {client?.name ?? "an app"} to POPSTracker
         </h1>
         {loaded.email && (
           <p className="text-sm text-muted-foreground">Signed in as {loaded.email}</p>
