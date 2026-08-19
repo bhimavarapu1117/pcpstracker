@@ -7,8 +7,8 @@ import listOpenSessions from "./tools/list-open-sessions";
 const projectRef = import.meta.env['VITE_SUPABASE_PROJECT_ID'] ?? "project-ref-unset";
 
 export default defineMcp({
-  name: "popstracker",
-  title: "POPSTracker",
+  name: "pcpstracker",
+  title: "PCPSTracker",
   version: "0.1.0",
   instructions:
     "Read-only tools for the POPS Pest Care attendance tracker: employees, job sites with geofences, daily attendance/site-visit reports, and currently open logins or site visits.",

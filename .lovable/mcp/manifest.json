@@ -11,9 +11,9 @@
   },
   "mcp": {
     "server": {
-      "name": "popstracker",
+      "name": "pcpstracker",
       "version": "0.1.0",
-      "title": "POPSTracker"
+      "title": "PCPSTracker"
     },
     "tools": [
       {
