@@ -157,7 +157,7 @@ function FieldApp() {
         {ready && session ? (
           <>
             <header className="flex items-center justify-center py-2">
-              <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-10 w-auto" />
+              <img src={popsLogo} alt="PCPS Pest Care Pvt Ltd logo" className="h-10 w-auto" />
             </header>
             <div className="mt-6">
               <h1 className="text-2xl font-semibold tracking-tight">
@@ -172,7 +172,7 @@ function FieldApp() {
         ) : (
           <div className="pt-10 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">
-              POPS Pest Care employee attendance &amp; site visit tracker
+              PCPS Pest Care employee attendance &amp; site visit tracker
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Log in with your Employee ID and PIN to record attendance and check in to sites.
@@ -224,7 +224,7 @@ function LoginCard({ onLogin }: { onLogin: (s: Session) => void }) {
       <DialogHeader>
         <DialogTitle className="sr-only">Employee sign in</DialogTitle>
       </DialogHeader>
-      <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="mb-6 h-16 w-auto" />
+      <img src={popsLogo} alt="PCPS Pest Care Pvt Ltd logo" className="mb-6 h-16 w-auto" />
       <form onSubmit={submit} className="w-full space-y-4">
         <div className="space-y-2">
           <Label htmlFor="employeeId">Employee ID</Label>

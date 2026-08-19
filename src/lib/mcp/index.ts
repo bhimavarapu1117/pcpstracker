@@ -11,7 +11,7 @@ export default defineMcp({
   title: "PCPSTracker",
   version: "0.1.0",
   instructions:
-    "Read-only tools for the POPS Pest Care attendance tracker: employees, job sites with geofences, daily attendance/site-visit reports, and currently open logins or site visits.",
+    "Read-only tools for the PCPS Pest Care attendance tracker: employees, job sites with geofences, daily attendance/site-visit reports, and currently open logins or site visits.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
