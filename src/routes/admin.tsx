@@ -189,11 +189,9 @@ function AdminPage() {
           <Card className="rounded-3xl border-0 bg-card/85 shadow-lg backdrop-blur">
             <CardHeader className="items-center pb-2">
               <img src={popsLogo} alt="POPS Pest Care Pvt Ltd logo" className="h-16 w-auto" />
-              <CardTitle asChild>
-                <h1 className="mt-3 text-center text-2xl font-semibold tracking-tight">
-                  POPS Pest Care admin dashboard
-                </h1>
-              </CardTitle>
+              <h1 className="mt-3 text-center text-2xl font-semibold tracking-tight">
+                POPS Pest Care admin dashboard
+              </h1>
               <p className="text-center text-sm text-muted-foreground">
                 Enter your passcode to view attendance and site visits.
               </p>
